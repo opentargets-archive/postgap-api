@@ -88,8 +88,14 @@ const resolvers = {
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 
 const app = express();
-app.use('/', graphqlHTTP({
-    schema,
-    graphiql: true
+app.use('/', graphqlHTTP(req => {
+    const startTime = Date.now();
+    return {
+        schema,
+        graphiql: true,
+        extensions: ({ document, variables, operationName, result }) => ({
+            timeTaken: Date.now() - startTime,
+        })
+    };
 }));
 app.listen(4000);
