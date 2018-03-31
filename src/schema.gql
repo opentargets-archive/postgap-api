@@ -1,7 +1,9 @@
 type Query {
     locus(chromosome: String, start: Int, end: Int): DrawableLocus
+    diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
 }
 type Gene {
+    # The Ensembl gene identifier.
     id: String
     symbol: String
     chromosome: String
@@ -59,4 +61,33 @@ type DrawableLocus {
     diseases: [Disease]
     geneVariants: [GeneVariant]
     variantLeadVariants: [VariantLeadVariant]
+}
+type DiseaseTable {
+    rows: [FullTableRow]
+    totalRows: Int
+}
+type FullTableRow {
+    geneId: String
+    geneSymbol: String
+    geneChromosome: String
+    geneTss: Int
+    variantId: String
+    variantChromosome: String
+    variantPosition: Int
+    leadVariantId: String
+    efoId: String,
+    efoName: String,
+    vep: Float
+    gtex: Float
+    pchic: Float
+    fantom5: Float
+    dhs: Float
+    nearest: Boolean
+    r2: Float
+    gwasPValue: Float
+    gwasOddsRatio: Float
+    gwasBeta: Float
+    gwasSize: Int
+    gwasPMId: String
+    gwasStudy: String
 }
