@@ -1,0 +1,28 @@
+type Query {
+    locus(chromosome: String, start: Int, end: Int): DrawableLocus
+}
+type Gene {
+    id: String
+    symbol: String
+    chromosome: String
+    tss: Int
+}
+type Variant {
+    id: String
+    chromosome: String
+    position: Int
+}
+type LeadVariant {
+    id: String
+    chromosome: String
+    position: Int
+}
+type Disease {
+    id: String
+    name: String
+}
+type DrawableLocus {
+    genes: [Gene]
+    variants: [Variant]
+    diseases: [Disease]
+}
