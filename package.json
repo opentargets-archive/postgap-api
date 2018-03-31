@@ -1,0 +1,27 @@
+{
+  "name": "postgap-api",
+  "version": "0.0.1",
+  "description": "A GraphQL API for serving POSTGAP data",
+  "main": "index.js",
+  "author": "peatroot <garethpeat@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon ./src/index.js --exec babel-node -e js",
+    "build": "babel src -d dist",
+    "serve": "node dist/index.js"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "express": "^4.16.3",
+    "express-graphql": "^0.6.12",
+    "graphql": "^0.13.2",
+    "sqlite3": "^4.0.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-latest": "^6.24.1",
+    "nodemon": "^1.17.3"
+  }
+}
