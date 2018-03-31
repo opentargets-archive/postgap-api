@@ -56,6 +56,17 @@ const resolvers = {
             `;
             const variantsQuery = db.all(variantsSql, params);
 
+            // lead variants
+            const leadVariantsSql = `
+            SELECT DISTINCT
+                gwas_snp as id
+            FROM raw
+            WHERE
+                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
+                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            `;
+            const leadVariantsQuery = db.all(leadVariantsSql, params);
+
             // diseases
             const diseasesSql = `
             SELECT DISTINCT
@@ -68,16 +79,62 @@ const resolvers = {
             `;
             const diseasesQuery = db.all(diseasesSql, params);
 
+            // geneVariants
+            const geneVariantsSql = `
+            SELECT DISTINCT
+                (gene_id || "-" || ld_snp_rsID) AS id,
+                gene_id as geneId,
+                gene_symbol as geneSymbol,
+                GRCH38_gene_chrom as geneChromosome,
+                GRCh38_gene_pos as geneTss,
+                ld_snp_rsID as variantId,
+                GRCH38_chrom as variantChromosome,
+                GRCh38_pos as variantPosition,
+                VEP as vep,
+                GTEx as gtex,
+                PCHiC as pchic,
+                Fantom5 as fantom5,
+                DHS as dhs,
+                Nearest as nearest
+            FROM raw
+            WHERE
+                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
+                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            `;
+            const geneVariantsQuery = db.all(geneVariantsSql, params)
+
+            // variantLeadVariants
+            const variantLeadVariantsSql = `
+            SELECT DISTINCT
+                (ld_snp_rsID || "-" || gwas_snp) AS id,
+                ld_snp_rsID as variantId,
+                GRCH38_chrom as variantChromosome,
+                GRCh38_pos as variantPosition,
+                gwas_snp as leadVariantId,
+                r2
+            FROM raw
+            WHERE
+                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
+                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            `;
+            const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params)
+
             // wait for all queries and return composite object
             return Promise.all([
                 genesQuery,
                 variantsQuery,
-                diseasesQuery
-            ]).then(([genes, variants, diseases]) => {
+                leadVariantsQuery,
+                diseasesQuery,
+                geneVariantsQuery,
+                variantLeadVariantsQuery
+            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants]) => {
                 return {
                     genes,
                     variants,
-                    diseases
+                    leadVariants,
+                    diseases,
+                    geneVariants,
+                    variantLeadVariants
                 }
             })
         }

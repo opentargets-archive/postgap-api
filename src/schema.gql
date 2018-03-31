@@ -14,15 +14,49 @@ type Variant {
 }
 type LeadVariant {
     id: String
-    chromosome: String
-    position: Int
+    # TODO: chromosome: String
+    # TODO: position: Int
 }
 type Disease {
     id: String
     name: String
 }
+type GeneVariant {
+    id: String
+    geneId: String
+    geneSymbol: String
+    geneChromosome: String
+    geneTss: Int
+    variantId: String
+    variantChromosome: String
+    variantPosition: Int
+    # TODO: otG2VScore: Float
+    vep: Float
+    gtex: Float
+    pchic: Float
+    fantom5: Float
+    dhs: Float
+    nearest: Boolean
+}
+type VariantLeadVariant {
+    id: String
+    variantId: String
+    variantChromosome: String
+    variantPosition: Int
+    leadVariantId: String
+    r2: Float
+}
+type LeadVariantDisease {
+    id: String
+    leadVariant: LeadVariant
+    disease: Disease
+    gwasPValue: Float
+}
 type DrawableLocus {
     genes: [Gene]
     variants: [Variant]
+    leadVariants: [LeadVariant]
     diseases: [Disease]
+    geneVariants: [GeneVariant]
+    variantLeadVariants: [VariantLeadVariant]
 }
