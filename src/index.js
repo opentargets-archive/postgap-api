@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
-import graphqlHTTP from 'express-graphql';
+import cors from 'cors';
+const bodyParser = require('body-parser');
+const { graphqlExpress, graphiqlExpress } = require('apollo-server-express');
 import { buildSchema } from 'graphql';
 import { makeExecutableSchema } from 'graphql-tools';
 import sqlite3 from 'sqlite3';
@@ -200,15 +202,11 @@ const resolvers = {
 // merge schema with resolvers
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 
+// create express app
 const app = express();
-app.use('/', graphqlHTTP(req => {
-    const startTime = Date.now();
-    return {
-        schema,
-        graphiql: true,
-        extensions: ({ document, variables, operationName, result }) => ({
-            timeTaken: Date.now() - startTime,
-        })
-    };
-}));
+app.use(cors())
+app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }))
+app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
+
+// start
 app.listen(4000);
