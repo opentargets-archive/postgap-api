@@ -147,6 +147,7 @@ const resolvers = {
             // rows
             const rowsSql = `
             SELECT
+                "index",
                 gene_id as geneId,
                 gene_symbol as geneSymbol,
                 GRCH38_gene_chrom as geneChromosome,
@@ -179,7 +180,7 @@ const resolvers = {
 
             // total rows
             const totalRowsSql = `
-            SELECT COUNT(*) as totalRows
+            SELECT COUNT(*) as total
             FROM raw
             WHERE disease_efo_id=$efoId
             `;
@@ -189,10 +190,12 @@ const resolvers = {
             return Promise.all([
                 rowsQuery,
                 totalRowsQuery,
-            ]).then(([rows, { totalRows }]) => {
+            ]).then(([rows, { total }]) => {
                 return {
                     rows,
-                    totalRows
+                    total,
+                    offset,
+                    limit
                 }
             })
         }

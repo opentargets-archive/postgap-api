@@ -64,9 +64,12 @@ type DrawableLocus {
 }
 type DiseaseTable {
     rows: [FullTableRow]
-    totalRows: Int
+    total: Int
+    offset: Int
+    limit: Int
 }
 type FullTableRow {
+    index: Int
     geneId: String
     geneSymbol: String
     geneChromosome: String
