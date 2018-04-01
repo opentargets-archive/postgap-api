@@ -167,13 +167,21 @@ const resolvers = {
                         position: leadVariantLocation.position
                     }
                 })
+                const variantLeadVariantsWithLocations = variantLeadVariants.map(d => {
+                    const leadVariantLocation = leadVariantsLocations[d.leadVariantId];
+                    return {
+                        ...d,
+                        leadVariantChromosome: leadVariantLocation.chromosome,
+                        leadVariantPosition: leadVariantLocation.position
+                    }
+                })
                 return {
                     genes: genesWithLocations,
                     variants,
                     leadVariants: leadVariantsWithLocations,
                     diseases,
                     geneVariants,
-                    variantLeadVariants
+                    variantLeadVariants: variantLeadVariantsWithLocations
                 }
             })
         },

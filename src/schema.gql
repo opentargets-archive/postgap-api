@@ -50,6 +50,8 @@ type VariantLeadVariant {
     variantChromosome: String
     variantPosition: Int
     leadVariantId: String
+    leadVariantChromosome: String
+    leadVariantPosition: Int
     r2: Float
 }
 type LeadVariantDisease {
