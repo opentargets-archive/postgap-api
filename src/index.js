@@ -2,12 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
-const bodyParser = require('body-parser');
-const { graphqlExpress, graphiqlExpress } = require('apollo-server-express');
+import bodyParser from 'body-parser';
+import { graphqlExpress, graphiqlExpress } from 'apollo-server-express';
 import { buildSchema } from 'graphql';
 import { makeExecutableSchema } from 'graphql-tools';
 import sqlite3 from 'sqlite3';
 import {promisify} from 'bluebird';
+
+import ensemblClient from './ensemblClient';
 
 // open a connection to the database
 let db = new sqlite3.Database('postgap.db', sqlite3.OPEN_READONLY, err => {
@@ -46,6 +48,13 @@ const resolvers = {
             `;
             const genesQuery = db.all(genesSql, params);
 
+            // gene locations (from Ensembl)
+            const geneLocationsQuery = genesQuery.then(genes => {
+                // retrieve canonical transcript for each gene from Ensembl API
+                const geneIds = genes.map(d => d.id);
+                return ensemblClient.fetchGenes(geneIds);
+            });
+
             // variants
             const variantsSql = `
             SELECT DISTINCT
@@ -69,6 +78,13 @@ const resolvers = {
                 OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
             `;
             const leadVariantsQuery = db.all(leadVariantsSql, params);
+
+            // lead variant locations (from Ensembl)
+            const leadVariantsLocationsQuery = leadVariantsQuery.then(leadVariants => {
+                // retrieve chromosome/position for each lead variant from Ensembl API
+                const leadVariantIds = leadVariants.map(d => d.id);
+                return ensemblClient.fetchVariants(leadVariantIds);
+            });
 
             // diseases
             const diseasesSql = `
@@ -129,12 +145,32 @@ const resolvers = {
                 leadVariantsQuery,
                 diseasesQuery,
                 geneVariantsQuery,
-                variantLeadVariantsQuery
-            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants]) => {
+                variantLeadVariantsQuery,
+                geneLocationsQuery,
+                leadVariantsLocationsQuery
+            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, geneLocations, leadVariantsLocations]) => {
+                const genesWithLocations = genes.map(d => {
+                    const geneLocation = geneLocations[d.id];
+                    return {
+                        ...d,
+                        start: geneLocation.start,
+                        end: geneLocation.end,
+                        forwardStrand: geneLocation.forwardStrand,
+                        canonicalTranscript: geneLocation.canonicalTranscript
+                    }
+                })
+                const leadVariantsWithLocations = leadVariants.map(d => {
+                    const leadVariantLocation = leadVariantsLocations[d.id];
+                    return {
+                        ...d,
+                        chromosome: leadVariantLocation.chromosome,
+                        position: leadVariantLocation.position
+                    }
+                })
                 return {
-                    genes,
+                    genes: genesWithLocations,
                     variants,
-                    leadVariants,
+                    leadVariants: leadVariantsWithLocations,
                     diseases,
                     geneVariants,
                     variantLeadVariants

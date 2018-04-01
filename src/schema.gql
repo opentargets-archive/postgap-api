@@ -8,6 +8,10 @@ type Gene {
     symbol: String
     chromosome: String
     tss: Int
+    start: Int
+    end: Int
+    forwardStrand: Boolean
+    canonicalTranscript: CanonicalTranscript
 }
 type Variant {
     id: String
@@ -16,8 +20,8 @@ type Variant {
 }
 type LeadVariant {
     id: String
-    # TODO: chromosome: String
-    # TODO: position: Int
+    chromosome: String
+    position: Int
 }
 type Disease {
     id: String
@@ -53,6 +57,21 @@ type LeadVariantDisease {
     leadVariant: LeadVariant
     disease: Disease
     gwasPValue: Float
+}
+type CanonicalTranscript {
+    id: String
+    start: Int
+    end: Int
+    forwardStrand: Boolean
+    exons: [Exon]
+    tss: Int
+    translationStart: Int
+    translationEnd: Int
+}
+type Exon {
+    id: String
+    start: Int
+    end: Int
 }
 type DrawableLocus {
     genes: [Gene]
