@@ -202,6 +202,27 @@ const resolvers = {
             `;
             const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params)
 
+            // leadVariantDiseases
+            const leadVariantDiseasesSql = `
+            SELECT DISTINCT
+                (gwas_snp || "-" || disease_efo_id) AS id,
+                gwas_snp as leadVariantId,
+                disease_efo_id as efoId,
+                disease_name as efoName,
+                gwas_pvalue as gwasPValue,
+                gwas_odds_ratio as gwasOddsRatio,
+                gwas_beta as gwasBeta,
+                gwas_study as gwasStudy,
+                gwas_pmid as gwasPMId,
+                gwas_size as gwasSize
+            FROM raw
+            WHERE
+                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
+                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            `;
+            const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params)
+
+
             // wait for all queries and return composite object
             return Promise.all([
                 genesQuery,
@@ -210,9 +231,10 @@ const resolvers = {
                 diseasesQuery,
                 geneVariantsQuery,
                 variantLeadVariantsQuery,
+                leadVariantDiseasesQuery,
                 geneLocationsQuery,
                 leadVariantsLocationsQuery
-            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, geneLocations, leadVariantsLocations]) => {
+            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations, leadVariantsLocations]) => {
                 const genesWithLocations = genes.map(d => {
                     const geneLocation = geneLocations[d.id];
                     return {
@@ -220,6 +242,13 @@ const resolvers = {
                         start: geneLocation.start,
                         end: geneLocation.end,
                         forwardStrand: geneLocation.forwardStrand,
+                        canonicalTranscript: geneLocation.canonicalTranscript
+                    }
+                })
+                const geneVariantsWithLocations = geneVariants.map(d => {
+                    const geneLocation = geneLocations[d.geneId];
+                    return {
+                        ...d,
                         canonicalTranscript: geneLocation.canonicalTranscript
                     }
                 })
@@ -239,13 +268,23 @@ const resolvers = {
                         leadVariantPosition: leadVariantLocation.position
                     }
                 })
+                const leadVariantDiseasesWithLocations = leadVariantDiseases.map(d => {
+                    const leadVariantLocation = leadVariantsLocations[d.leadVariantId];
+                    return {
+                        ...d,
+                        leadVariantChromosome: leadVariantLocation.chromosome,
+                        leadVariantPosition: leadVariantLocation.position
+                    }
+                })
+                
                 return {
                     genes: genesWithLocations,
                     variants,
                     leadVariants: leadVariantsWithLocations,
                     diseases,
-                    geneVariants,
-                    variantLeadVariants: variantLeadVariantsWithLocations
+                    geneVariants: geneVariantsWithLocations,
+                    variantLeadVariants: variantLeadVariantsWithLocations,
+                    leadVariantDiseases: leadVariantDiseasesWithLocations
                 }
             })
         },

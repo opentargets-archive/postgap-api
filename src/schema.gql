@@ -33,6 +33,7 @@ type GeneVariant {
     geneSymbol: String
     geneChromosome: String
     geneTss: Int
+    canonicalTranscript: CanonicalTranscript
     variantId: String
     variantChromosome: String
     variantPosition: Int
@@ -56,9 +57,17 @@ type VariantLeadVariant {
 }
 type LeadVariantDisease {
     id: String
-    leadVariant: LeadVariant
-    disease: Disease
+    leadVariantId: String
+    leadVariantChromosome: String
+    leadVariantPosition: Int
+    efoId: String
+    efoName: String
     gwasPValue: Float
+    gwasOddsRatio: Float
+    gwasBeta: Float
+    gwasStudy: String
+    gwasPMId: String
+    gwasSize: Int
 }
 type CanonicalTranscript {
     id: String
@@ -82,6 +91,7 @@ type DrawableLocus {
     diseases: [Disease]
     geneVariants: [GeneVariant]
     variantLeadVariants: [VariantLeadVariant]
+    leadVariantDiseases: [LeadVariantDisease]
 }
 type DiseaseTable {
     rows: [FullTableRow]
