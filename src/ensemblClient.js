@@ -79,12 +79,15 @@ export default {
         ids: variantIds,
       };
       return axios.post(url, body).then(response => {
+        console.log(`ensemblClient.fetchVariants: ${response.status} (${variantIds.length} variants)`);
         const variantsRaw = response.data;
         const variantsClean = {};
         for (const [variantId, variantObj] of Object.entries(variantsRaw)) {
             variantsClean[variantId] = transformEnsemblVariant(variantObj);
         }
         return variantsClean;
+      }).catch(function (error) {
+        console.log(error);
       });
     },
     fetchGenes(geneIds) {
@@ -94,12 +97,15 @@ export default {
         expand: true,
       };
       return axios.post(url, body).then(response => {
+        console.log(`ensemblClient.fetchGenes: ${response.status} (${geneIds.length} genes)`);
         const genesRaw = response.data;
         const genesClean = {};
         for (const [geneId, geneObj] of Object.entries(genesRaw)) {
             genesClean[geneId] = transformEnsemblGene(geneObj);
         }
         return genesClean;
+      }).catch(function (error) {
+        console.log(error);
       });
     },
     // fetchSearch(query) {

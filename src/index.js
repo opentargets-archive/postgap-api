@@ -24,6 +24,14 @@ let db = new sqlite3.Database('postgap.db', sqlite3.OPEN_READONLY, err => {
 db.all = promisify(db.all);
 db.get = promisify(db.get);
 
+// total number of genes is ~20,000,
+// so cache ensembl calls on an object
+let geneCache = {};
+
+// total number of lead variants is ~40,000 (which need location info),
+// so cache ensembl calls on an object
+let leadVariantCache = {};
+
 // load the schema
 const schemaFile = path.join(__dirname, 'schema.gql');
 const typeDefs = fs.readFileSync(schemaFile, 'utf8');
@@ -52,7 +60,30 @@ const resolvers = {
             const geneLocationsQuery = genesQuery.then(genes => {
                 // retrieve canonical transcript for each gene from Ensembl API
                 const geneIds = genes.map(d => d.id);
-                return ensemblClient.fetchGenes(geneIds);
+
+                // look up in cache object
+                const cachedGeneIds = geneIds.filter(d => geneCache[d]);
+                const notCachedGeneIds = geneIds.filter(d => !geneCache[d]);
+                console.log(`geneCache: ${cachedGeneIds.length} cached, ${notCachedGeneIds.length} uncached`)
+                const cachedGenes = {}
+                cachedGeneIds.forEach(d => {
+                    cachedGenes[d] = geneCache[d];
+                });
+
+                return ensemblClient.fetchGenes(notCachedGeneIds)
+                .then(notCachedGenes => {
+                    // update cache
+                    geneCache = {
+                        ...geneCache,
+                        ...notCachedGenes
+                    }
+
+                    // return merged
+                    return {
+                        ...cachedGenes,
+                        ...notCachedGenes
+                    }
+                });
             });
 
             // variants
@@ -83,7 +114,30 @@ const resolvers = {
             const leadVariantsLocationsQuery = leadVariantsQuery.then(leadVariants => {
                 // retrieve chromosome/position for each lead variant from Ensembl API
                 const leadVariantIds = leadVariants.map(d => d.id);
-                return ensemblClient.fetchVariants(leadVariantIds);
+
+                // look up in cache object
+                const cachedLeadVariantIds = leadVariantIds.filter(d => leadVariantCache[d]);
+                const notCachedLeadVariantIds = leadVariantIds.filter(d => !leadVariantCache[d]);
+                console.log(`leadVariantCache: ${cachedLeadVariantIds.length} cached, ${notCachedLeadVariantIds.length} uncached`)
+                const cachedLeadVariants = {}
+                cachedLeadVariantIds.forEach(d => {
+                    cachedLeadVariants[d] = leadVariantCache[d];
+                });
+
+                return ensemblClient.fetchVariants(notCachedLeadVariantIds)
+                .then(notCachedLeadVariants => {
+                    // update cache
+                    leadVariantCache = {
+                        ...leadVariantCache,
+                        ...notCachedLeadVariants
+                    }
+
+                    // return merged
+                    return {
+                        ...cachedLeadVariants,
+                        ...notCachedLeadVariants
+                    }
+                });
             });
 
             // diseases
