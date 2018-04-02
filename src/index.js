@@ -70,6 +70,11 @@ const resolvers = {
                     cachedGenes[d] = geneCache[d];
                 });
 
+                if (notCachedGeneIds.length === 0) {
+                    // all in the cache
+                    return cachedGenes;
+                }
+
                 return ensemblClient.fetchGenes(notCachedGeneIds)
                 .then(notCachedGenes => {
                     // update cache
@@ -123,6 +128,11 @@ const resolvers = {
                 cachedLeadVariantIds.forEach(d => {
                     cachedLeadVariants[d] = leadVariantCache[d];
                 });
+
+                if (notCachedLeadVariantIds.length === 0) {
+                    // all in the cache
+                    return cachedLeadVariants;
+                }
 
                 return ensemblClient.fetchVariants(notCachedLeadVariantIds)
                 .then(notCachedLeadVariants => {
