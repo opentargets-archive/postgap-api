@@ -1,5 +1,30 @@
 # POSTGAP API
-This is currently an experimental application to build a GraphQL API to serve POSTGAP data specifically for the POSTGAP web application. The main motivations are to improve performance and to enamble more flexible queries.
+This is currently an experimental application to build a GraphQL API to serve POSTGAP data specifically for the POSTGAP web application. The main motivations are to improve performance and to enable more flexible queries.
+
+## Usage
+### Build db step
+Assumption: You have downloaded the latest POSTGAP output file (eg `postgap.20180324.txt.gz`) to the root of a clone of this repo.
+
+TODO: Setup requirements.txt and add instructions here
+
+Transform the data to meet the Open Targets requirements (outputs `<input_file>.transformed`):
+```
+python3 ./data-prep/transform.py postgap.20180324.txt.gz
+```
+
+Build the `sqlite3` database (outputs `postgap.db`):
+```
+python3 ./data-prep/build.py postgap.20180324.txt.gz.transformed
+```
+
+### GraphQL server
+Assumption: You have a recent `node` environment set up and `yarn` installed.
+
+To run the GraphQL server in development mode:
+```
+yarn install
+yarn run start
+```
 
 ## Inputs
 This application should build on a POSTGAP flat file. This primary file should then be decorated with the following additional columns of data.
