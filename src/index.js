@@ -359,4 +359,8 @@ app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }))
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
 
 // start
-app.listen(4000);
+const server = app.listen(4000, () => {
+    const host = server.address().address;
+    const port = server.address().port;
+    console.log('Listening at http://%s:%s', host, port);
+});
