@@ -26,6 +26,18 @@ yarn install
 yarn run start
 ```
 
+### Docker
+You can build the GraphQL server as a docker image.
+```
+docker build -t <name>:<version> .
+```
+
+To run, you might then do the following.
+```
+docker run -p 4000:4000 -d --name=<container-name> <name>:<version>
+```
+
+
 ## Inputs
 This application should build on a POSTGAP flat file. This primary file should then be decorated with the following additional columns of data.
 Essential:
