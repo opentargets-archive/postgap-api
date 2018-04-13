@@ -195,7 +195,7 @@ def fetch_ensembl_variants(variant_ids):
     raw_dict = r.json()
     cleaned = []
     for variant_id, variant in raw_dict.items():
-        if 'mappings' not in variant:
+        if ('mappings' not in variant) or len(variant['mappings']) == 0:
             print('No mappings for {}'.format(variant_id))
             continue
 
