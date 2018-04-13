@@ -9,10 +9,8 @@ import { makeExecutableSchema } from 'graphql-tools';
 import sqlite3 from 'sqlite3';
 import {promisify} from 'bluebird';
 
-import ensemblClient from './ensemblClient';
-
 // open a connection to the database
-let db = new sqlite3.Database('postgap.db', sqlite3.OPEN_READONLY, err => {
+let db = new sqlite3.Database('postgap.20180324.v0.0.1.db', sqlite3.OPEN_READONLY, err => {
     if (err) {
         console.error(err.message)
     } else {
@@ -41,6 +39,22 @@ const resolvers = {
     Query: {
         locus: (_, { chromosome, start, end }) => {
             const params = {$chromosome: chromosome, $start: start, $end: end};
+            const oldWhere = `
+            WHERE
+                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
+                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            `;
+            const commonWhere = `
+            WHERE
+                (GRCh38_gene_start IS NOT NULL)
+                AND (GRCh38_gene_end IS NOT NULL)
+                AND (GRCh38_gwas_snp_pos IS NOT NULL)
+                AND (
+                    (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_start>=$start AND GRCh38_gene_start<=$end)
+                    OR (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_end>=$start AND GRCh38_gene_end<=$end)
+                    OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+                    OR (GRCh38_gwas_snp_chrom=$chromosome AND GRCh38_gwas_snp_pos>=$start AND GRCh38_gwas_snp_pos<=$end))
+            `;
 
             // genes
             const genesSql = `
@@ -48,47 +62,39 @@ const resolvers = {
                 gene_id as id,
                 gene_symbol as symbol,
                 GRCH38_gene_chrom as chromosome,
-                GRCh38_gene_pos as tss
-            FROM raw
-            WHERE
-                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
-                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+                GRCh38_gene_pos as tss,
+                GRCh38_gene_start as start,
+                GRCh38_gene_end as end
+            FROM processed
+            ${commonWhere}
             `;
             const genesQuery = db.all(genesSql, params);
 
             // gene locations (from Ensembl)
             const geneLocationsQuery = genesQuery.then(genes => {
-                // retrieve canonical transcript for each gene from Ensembl API
+                // retrieve canonical transcript info for each gene from gene table
                 const geneIds = genes.map(d => d.id);
-
-                // look up in cache object
-                const cachedGeneIds = geneIds.filter(d => geneCache[d]);
-                const notCachedGeneIds = geneIds.filter(d => !geneCache[d]);
-                console.log(`geneCache: ${cachedGeneIds.length} cached, ${notCachedGeneIds.length} uncached`)
-                const cachedGenes = {}
-                cachedGeneIds.forEach(d => {
-                    cachedGenes[d] = geneCache[d];
-                });
-
-                if (notCachedGeneIds.length === 0) {
-                    // all in the cache
-                    return cachedGenes;
-                }
-
-                return ensemblClient.fetchGenes(notCachedGeneIds)
-                .then(notCachedGenes => {
-                    // update cache
-                    geneCache = {
-                        ...geneCache,
-                        ...notCachedGenes
-                    }
-
-                    // return merged
-                    return {
-                        ...cachedGenes,
-                        ...notCachedGenes
-                    }
-                });
+                const geneLocationsSql = `
+                SELECT DISTINCT
+                    gene_id as geneId,
+                    description,
+                    canonical_transcript as canonicalTranscript
+                FROM gene
+                WHERE
+                    gene_id IN ("${geneIds.join('","')}")
+                `;
+                return db.all(geneLocationsSql).then(genes => {
+                    // create a lookup
+                    const geneLookup = {};
+                    genes.forEach(d => {
+                        geneLookup[d.geneId] = {
+                            geneId: d.geneId,
+                            description: d.description,
+                            canonicalTranscript: JSON.parse(d.canonicalTranscript)
+                        }
+                    })
+                    return geneLookup;
+                })
             });
 
             // variants
@@ -97,68 +103,29 @@ const resolvers = {
                 ld_snp_rsID as id,
                 GRCH38_chrom as chromosome,
                 GRCh38_pos as position
-            FROM raw
-            WHERE
-                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
-                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            FROM processed
+            ${commonWhere}
             `;
             const variantsQuery = db.all(variantsSql, params);
 
             // lead variants
             const leadVariantsSql = `
             SELECT DISTINCT
-                gwas_snp as id
-            FROM raw
-            WHERE
-                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
-                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+                gwas_snp as id,
+                GRCh38_gwas_snp_chrom as chromosome,
+                GRCh38_gwas_snp_pos as position
+            FROM processed
+            ${commonWhere}
             `;
             const leadVariantsQuery = db.all(leadVariantsSql, params);
-
-            // lead variant locations (from Ensembl)
-            const leadVariantsLocationsQuery = leadVariantsQuery.then(leadVariants => {
-                // retrieve chromosome/position for each lead variant from Ensembl API
-                const leadVariantIds = leadVariants.map(d => d.id);
-
-                // look up in cache object
-                const cachedLeadVariantIds = leadVariantIds.filter(d => leadVariantCache[d]);
-                const notCachedLeadVariantIds = leadVariantIds.filter(d => !leadVariantCache[d]);
-                console.log(`leadVariantCache: ${cachedLeadVariantIds.length} cached, ${notCachedLeadVariantIds.length} uncached`)
-                const cachedLeadVariants = {}
-                cachedLeadVariantIds.forEach(d => {
-                    cachedLeadVariants[d] = leadVariantCache[d];
-                });
-
-                if (notCachedLeadVariantIds.length === 0) {
-                    // all in the cache
-                    return cachedLeadVariants;
-                }
-
-                return ensemblClient.fetchVariants(notCachedLeadVariantIds)
-                .then(notCachedLeadVariants => {
-                    // update cache
-                    leadVariantCache = {
-                        ...leadVariantCache,
-                        ...notCachedLeadVariants
-                    }
-
-                    // return merged
-                    return {
-                        ...cachedLeadVariants,
-                        ...notCachedLeadVariants
-                    }
-                });
-            });
 
             // diseases
             const diseasesSql = `
             SELECT DISTINCT
                 disease_efo_id as id,
                 disease_name as name
-            FROM raw
-            WHERE
-                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
-                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            FROM processed
+            ${commonWhere}
             `;
             const diseasesQuery = db.all(diseasesSql, params);
 
@@ -179,10 +146,8 @@ const resolvers = {
                 Fantom5 as fantom5,
                 DHS as dhs,
                 Nearest as nearest
-            FROM raw
-            WHERE
-                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
-                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            FROM processed
+            ${commonWhere}
             `;
             const geneVariantsQuery = db.all(geneVariantsSql, params)
 
@@ -194,11 +159,11 @@ const resolvers = {
                 GRCH38_chrom as variantChromosome,
                 GRCh38_pos as variantPosition,
                 gwas_snp as leadVariantId,
+                GRCh38_gwas_snp_chrom as leadVariantChromosome,
+                GRCh38_gwas_snp_pos as leadVariantPosition,
                 r2
-            FROM raw
-            WHERE
-                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
-                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            FROM processed
+            ${commonWhere}
             `;
             const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params)
 
@@ -207,6 +172,8 @@ const resolvers = {
             SELECT DISTINCT
                 (gwas_snp || "-" || disease_efo_id) AS id,
                 gwas_snp as leadVariantId,
+                GRCh38_gwas_snp_chrom as leadVariantChromosome,
+                GRCh38_gwas_snp_pos as leadVariantPosition,
                 disease_efo_id as efoId,
                 disease_name as efoName,
                 gwas_pvalue as gwasPValue,
@@ -215,10 +182,8 @@ const resolvers = {
                 gwas_study as gwasStudy,
                 gwas_pmid as gwasPMId,
                 gwas_size as gwasSize
-            FROM raw
-            WHERE
-                (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
-                OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            FROM processed
+            ${commonWhere}
             `;
             const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params)
 
@@ -233,8 +198,7 @@ const resolvers = {
                 variantLeadVariantsQuery,
                 leadVariantDiseasesQuery,
                 geneLocationsQuery,
-                leadVariantsLocationsQuery
-            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations, leadVariantsLocations]) => {
+            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations]) => {
                 const genesWithLocations = genes.map(d => {
                     const geneLocation = geneLocations[d.id];
                     return {
@@ -252,39 +216,15 @@ const resolvers = {
                         canonicalTranscript: geneLocation.canonicalTranscript
                     }
                 })
-                const leadVariantsWithLocations = leadVariants.map(d => {
-                    const leadVariantLocation = leadVariantsLocations[d.id];
-                    return {
-                        ...d,
-                        chromosome: leadVariantLocation.chromosome,
-                        position: leadVariantLocation.position
-                    }
-                })
-                const variantLeadVariantsWithLocations = variantLeadVariants.map(d => {
-                    const leadVariantLocation = leadVariantsLocations[d.leadVariantId];
-                    return {
-                        ...d,
-                        leadVariantChromosome: leadVariantLocation.chromosome,
-                        leadVariantPosition: leadVariantLocation.position
-                    }
-                })
-                const leadVariantDiseasesWithLocations = leadVariantDiseases.map(d => {
-                    const leadVariantLocation = leadVariantsLocations[d.leadVariantId];
-                    return {
-                        ...d,
-                        leadVariantChromosome: leadVariantLocation.chromosome,
-                        leadVariantPosition: leadVariantLocation.position
-                    }
-                })
                 
                 return {
                     genes: genesWithLocations,
                     variants,
-                    leadVariants: leadVariantsWithLocations,
+                    leadVariants,
                     diseases,
                     geneVariants: geneVariantsWithLocations,
-                    variantLeadVariants: variantLeadVariantsWithLocations,
-                    leadVariantDiseases: leadVariantDiseasesWithLocations
+                    variantLeadVariants,
+                    leadVariantDiseases
                 }
             })
         },
@@ -318,7 +258,7 @@ const resolvers = {
                 gwas_size as gwasSize,
                 gwas_pmid as gwasPMId,
                 gwas_study as gwasStudy
-            FROM raw
+            FROM processed
             WHERE disease_efo_id=$efoId
             LIMIT $limit
             OFFSET $offset
@@ -328,7 +268,7 @@ const resolvers = {
             // total rows
             const totalRowsSql = `
             SELECT COUNT(*) as total
-            FROM raw
+            FROM processed
             WHERE disease_efo_id=$efoId
             `;
             const totalRowsQuery = db.get(totalRowsSql, { $efoId: efoId });
