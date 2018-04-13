@@ -32,7 +32,8 @@ def build_db(filename):
     Open Targets format requirements.
     '''
     # creates db if db does not exist
-    conn = sqlite3.connect('postgap.db.scored')
+    # conn = sqlite3.connect('postgap.db.scored')
+    conn = sqlite3.connect('postgap.20180324.v0.0.1.db')
     cursor = conn.cursor()
 
     # build raw table
@@ -47,8 +48,8 @@ def build_db(filename):
     build_ensembl_lead_variants(cursor, conn)
     conn.commit()
 
-    # merge gene and lead variant position info into raw
-    add_gene_start_end(cursor, conn)
+    # build processed (merging previous three tables)
+    build_processed(cursor, conn)
     conn.commit()
 
     # close the connection now we are done with it
@@ -61,14 +62,9 @@ def build_raw(cursor, conn):
 
     # add indices
     cursor.executescript('''
-    CREATE INDEX ix_gene_id ON raw (gene_id);
-    CREATE INDEX ix_ld_snp_rsID ON raw (ld_snp_rsID);
-    CREATE INDEX ix_gwas_snp ON raw (gwas_snp);
-    CREATE INDEX ix_disease_efo_id ON raw (disease_efo_id);
-    CREATE INDEX ix_ld_snp_location ON raw (GRCh38_chrom, GRCh38_pos);
+    CREATE INDEX ix_raw_gene_id ON raw (gene_id);
+    CREATE INDEX ix_raw_gwas_snp ON raw (gwas_snp);
     ''')
-    # Note: the following should be replaced by gene start/end indices
-    # CREATE INDEX ix_gene_location ON raw (GRCh38_gene_chrom, GRCh38_gene_pos);
 
 def batch(iterable, n=1):
     l = len(iterable)
@@ -217,34 +213,30 @@ def fetch_ensembl_variants(variant_ids):
     cleaned_df = pd.DataFrame(cleaned, columns=LEAD_VARIANT_TABLE_COLS)
     return cleaned_df
 
-def add_gene_start_end(cursor, conn):
-    # update the raw table to contain the gene start and end (taken from the gene table)
-
+def build_processed(cursor, conn):
+    # create new table with gene and lead variant location information
     cursor.executescript('''
-    ALTER TABLE raw ADD COLUMN GRCh38_gene_start INT;
-    ALTER TABLE raw ADD COLUMN GRCh38_gene_end INT;
-    ALTER TABLE raw ADD COLUMN GRCh38_gwas_snp_chrom TEXT;
-    ALTER TABLE raw ADD COLUMN GRCh38_gwas_snp_pos INT;
+    CREATE TABLE processed AS
+        SELECT
+            raw.*,
+            gene.start AS GRCh38_gene_start,
+            gene.end AS GRCh38_gene_end,
+            lead_variant.seq_region_name AS GRCh38_gwas_snp_chrom,
+            lead_variant.position AS GRCh38_gwas_snp_pos
+        FROM raw
+        LEFT JOIN gene ON raw.gene_id = gene.gene_id
+        LEFT JOIN lead_variant ON lead_variant.gwas_snp = raw.gwas_snp;
     ''')
 
     cursor.executescript('''
-    UPDATE raw
-    SET GRCh38_gene_start = (SELECT g.start FROM gene g WHERE g.gene_id = gene_id),
-        GRCh38_gene_end = (SELECT g.end FROM gene g WHERE g.gene_id = gene_id)
-    WHERE gene_id IN (SELECT g.gene_id FROM gene g WHERE g.gene_id = raw.gene_id);
-    ''')
-
-    cursor.executescript('''
-    UPDATE raw
-    SET GRCh38_gwas_snp_chrom = (SELECT v.seq_region_name FROM lead_variant v WHERE v.gwas_snp = gwas_snp),
-        GRCh38_gwas_snp_pos = (SELECT v.position FROM lead_variant v WHERE v.gwas_snp = gwas_snp)
-    WHERE gwas_snp IN (SELECT v.gwas_snp FROM lead_variant v WHERE v.gwas_snp = raw.gwas_snp);
-    ''')
-
-    cursor.executescript('''
-    CREATE INDEX ix_gene_start ON raw (GRCh38_gene_chrom, GRCh38_gene_start);
-    CREATE INDEX ix_gene_end ON raw (GRCh38_gene_chrom, GRCh38_gene_end);
-    CREATE INDEX ix_gwas_snp_location ON raw (GRCh38_gwas_snp_chrom, GRCh38_gwas_snp_pos);
+    CREATE INDEX ix_gene_id ON processed (gene_id);
+    CREATE INDEX ix_ld_snp_rsID ON processed (ld_snp_rsID);
+    CREATE INDEX ix_gwas_snp ON processed (gwas_snp);
+    CREATE INDEX ix_disease_efo_id ON processed (disease_efo_id);
+    CREATE INDEX ix_ld_snp_location ON processed (GRCh38_chrom, GRCh38_pos);
+    CREATE INDEX ix_gene_start ON processed (GRCh38_gene_chrom, GRCh38_gene_start);
+    CREATE INDEX ix_gene_end ON processed (GRCh38_gene_chrom, GRCh38_gene_end);
+    CREATE INDEX ix_gwas_snp_location ON processed (GRCh38_gwas_snp_chrom, GRCh38_gwas_snp_pos);
     ''')
 
 
