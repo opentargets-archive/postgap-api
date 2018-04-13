@@ -5,9 +5,9 @@ import pandas as pd
 import json
 import time
 
-API_INTER_CALL_PAUSE_S = 5
-GENE_BATCH_SIZE = 5
-LEAD_VARIANT_BATCH_SIZE = 5
+API_INTER_CALL_PAUSE_S = 10
+GENE_BATCH_SIZE = 500
+LEAD_VARIANT_BATCH_SIZE = 200
 GENE_TABLE_COLS = [
     'gene_id',
     'display_name',
@@ -32,7 +32,7 @@ def build_db(filename):
     Open Targets format requirements.
     '''
     # creates db if db does not exist
-    conn = sqlite3.connect('postgap.db')
+    conn = sqlite3.connect('postgap.db.scored')
     cursor = conn.cursor()
 
     # build raw table
@@ -45,6 +45,10 @@ def build_db(filename):
 
     # build lead variants table
     build_ensembl_lead_variants(cursor, conn)
+    conn.commit()
+
+    # merge gene and lead variant position info into raw
+    add_gene_start_end(cursor, conn)
     conn.commit()
 
     # close the connection now we are done with it
@@ -61,9 +65,10 @@ def build_raw(cursor, conn):
     CREATE INDEX ix_ld_snp_rsID ON raw (ld_snp_rsID);
     CREATE INDEX ix_gwas_snp ON raw (gwas_snp);
     CREATE INDEX ix_disease_efo_id ON raw (disease_efo_id);
-    CREATE INDEX ix_gene_location ON raw (GRCh38_gene_chrom, GRCh38_gene_pos);
     CREATE INDEX ix_ld_snp_location ON raw (GRCh38_chrom, GRCh38_pos);
     ''')
+    # Note: the following should be replaced by gene start/end indices
+    # CREATE INDEX ix_gene_location ON raw (GRCh38_gene_chrom, GRCh38_gene_pos);
 
 def batch(iterable, n=1):
     l = len(iterable)
@@ -79,8 +84,6 @@ def build_ensembl_genes(cursor, conn):
     genes = pd.DataFrame(columns=GENE_TABLE_COLS)
     counter = 1
     for gene_ids_batch in batch(gene_ids, n=GENE_BATCH_SIZE):
-        if counter == 5:
-            break
         genes_batch = fetch_ensembl_genes(gene_ids_batch)
         genes = pd.concat([genes, genes_batch], ignore_index=True)
         print('Called Ensembl genes ({})'.format(counter))
@@ -98,20 +101,31 @@ def build_ensembl_genes(cursor, conn):
     ''')
 
 def fetch_ensembl_genes(gene_ids):
-    print('Making request for {}'.format(gene_ids))
+    print('Making request for {} genes'.format(len(gene_ids)))
     r = requests.post('https://rest.ensembl.org/lookup/id', json = {'expand': True, 'ids': gene_ids})
     r.raise_for_status()
-    print('Request answered: {}'.format(r.status_code))
+    print('Request answered with status: {}'.format(r.status_code))
     raw_dict = r.json()
-    print('Request JSON: {}'.format(raw_dict))
     cleaned = []
+    skipped = 0
     for gene_id, gene in raw_dict.items():
+        if (not gene) or ('Transcript' not in gene):
+            skipped += 1
+            print('No transcript for gene {}, total skipped is {}'.format(gene_id, skipped))
+            continue
+
         # create json string for canonical transcript
         raw_transcripts = gene['Transcript']
         raw_canonical_transcript = [
             t for t in raw_transcripts
             if t['is_canonical'] == 1
         ][0]
+
+        if ('Translation' not in raw_canonical_transcript):
+            skipped += 1
+            print('No translation for gene {} (but has transcript), total skipped is {}'.format(gene_id, skipped))
+            continue
+
         tss = raw_canonical_transcript['start'] if (raw_canonical_transcript['strand'] == 1) else raw_canonical_transcript['end']
         clean_canonical_transcript = json.dumps({
             'id': raw_canonical_transcript['id'],
@@ -132,7 +146,7 @@ def fetch_ensembl_genes(gene_ids):
         clean_gene = (
             gene_id,
             gene['display_name'],
-            gene['description'],
+            gene['description'] if ('description' in gene) else '',
             gene['seq_region_name'],
             gene['start'],
             gene['end'],
@@ -157,8 +171,6 @@ def build_ensembl_lead_variants(cursor, conn):
     lead_variants = pd.DataFrame(columns=LEAD_VARIANT_TABLE_COLS)
     counter = 1
     for lead_variant_ids_batch in batch(lead_variant_ids, n=LEAD_VARIANT_BATCH_SIZE):
-        if counter == 5:
-            break
         lead_variants_batch = fetch_ensembl_variants(lead_variant_ids_batch)
         lead_variants = pd.concat([lead_variants, lead_variants_batch], ignore_index=True)
         print('Called Ensembl variants ({})'.format(counter))
@@ -176,16 +188,16 @@ def build_ensembl_lead_variants(cursor, conn):
     ''')
 
 def fetch_ensembl_variants(variant_ids):
-    print('Making request for {}'.format(variant_ids))
+    print('Making request for {} variants'.format(len(variant_ids)))
     r = requests.post('https://rest.ensembl.org/variation/homo_sapiens', json = {'ids': variant_ids})
     r.raise_for_status()
-    print('Request answered: {}'.format(r.status_code))
+    print('Request answered with status: {}'.format(r.status_code))
     raw_dict = r.json()
-    print('Request JSON: {}'.format(raw_dict))
     cleaned = []
     for variant_id, variant in raw_dict.items():
-        if not variant['mappings']:
+        if 'mappings' not in variant:
             print('No mappings for {}'.format(variant_id))
+            continue
 
         # grab the first mapping object
         mapping = variant['mappings'][0]
@@ -204,6 +216,36 @@ def fetch_ensembl_variants(variant_ids):
 
     cleaned_df = pd.DataFrame(cleaned, columns=LEAD_VARIANT_TABLE_COLS)
     return cleaned_df
+
+def add_gene_start_end(cursor, conn):
+    # update the raw table to contain the gene start and end (taken from the gene table)
+
+    cursor.executescript('''
+    ALTER TABLE raw ADD COLUMN GRCh38_gene_start INT;
+    ALTER TABLE raw ADD COLUMN GRCh38_gene_end INT;
+    ALTER TABLE raw ADD COLUMN GRCh38_gwas_snp_chrom TEXT;
+    ALTER TABLE raw ADD COLUMN GRCh38_gwas_snp_pos INT;
+    ''')
+
+    cursor.executescript('''
+    UPDATE raw
+    SET GRCh38_gene_start = (SELECT g.start FROM gene g WHERE g.gene_id = gene_id),
+        GRCh38_gene_end = (SELECT g.end FROM gene g WHERE g.gene_id = gene_id)
+    WHERE gene_id IN (SELECT g.gene_id FROM gene g WHERE g.gene_id = raw.gene_id);
+    ''')
+
+    cursor.executescript('''
+    UPDATE raw
+    SET GRCh38_gwas_snp_chrom = (SELECT v.seq_region_name FROM lead_variant v WHERE v.gwas_snp = gwas_snp),
+        GRCh38_gwas_snp_pos = (SELECT v.position FROM lead_variant v WHERE v.gwas_snp = gwas_snp)
+    WHERE gwas_snp IN (SELECT v.gwas_snp FROM lead_variant v WHERE v.gwas_snp = raw.gwas_snp);
+    ''')
+
+    cursor.executescript('''
+    CREATE INDEX ix_gene_start ON raw (GRCh38_gene_chrom, GRCh38_gene_start);
+    CREATE INDEX ix_gene_end ON raw (GRCh38_gene_chrom, GRCh38_gene_end);
+    CREATE INDEX ix_gwas_snp_location ON raw (GRCh38_gwas_snp_chrom, GRCh38_gwas_snp_pos);
+    ''')
 
 
 if __name__ == '__main__':
