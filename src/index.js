@@ -78,6 +78,7 @@ const resolvers = {
                 SELECT DISTINCT
                     gene_id as geneId,
                     description,
+                    strand,
                     canonical_transcript as canonicalTranscript
                 FROM gene
                 WHERE
@@ -90,6 +91,7 @@ const resolvers = {
                         geneLookup[d.geneId] = {
                             geneId: d.geneId,
                             description: d.description,
+                            forwardStrand: (d.strand === 1),
                             canonicalTranscript: JSON.parse(d.canonicalTranscript)
                         }
                     })
@@ -203,8 +205,6 @@ const resolvers = {
                     const geneLocation = geneLocations[d.id];
                     return {
                         ...d,
-                        start: geneLocation.start,
-                        end: geneLocation.end,
                         forwardStrand: geneLocation.forwardStrand,
                         canonicalTranscript: geneLocation.canonicalTranscript
                     }
