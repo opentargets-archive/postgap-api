@@ -37,7 +37,7 @@ type GeneVariant {
     variantId: String
     variantChromosome: String
     variantPosition: Int
-    # TODO: otG2VScore: Float
+    otG2VScore: Float
     vep: Float
     gtex: Float
     pchic: Float
@@ -109,8 +109,9 @@ type FullTableRow {
     variantChromosome: String
     variantPosition: Int
     leadVariantId: String
-    efoId: String,
-    efoName: String,
+    efoId: String
+    efoName: String
+    otG2VScore: Float
     vep: Float
     gtex: Float
     pchic: Float

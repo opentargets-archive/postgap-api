@@ -142,6 +142,7 @@ const resolvers = {
                 ld_snp_rsID as variantId,
                 GRCH38_chrom as variantChromosome,
                 GRCh38_pos as variantPosition,
+                ot_g2v_score as otG2VScore,
                 VEP as vep,
                 GTEx as gtex,
                 PCHiC as pchic,
@@ -201,6 +202,7 @@ const resolvers = {
                 leadVariantDiseasesQuery,
                 geneLocationsQuery,
             ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations]) => {
+                console.log(geneVariants)
                 const genesWithLocations = genes.map(d => {
                     const geneLocation = geneLocations[d.id];
                     return {
@@ -245,6 +247,7 @@ const resolvers = {
                 gwas_snp as leadVariantId,
                 disease_efo_id as efoId,
                 disease_name as efoName,
+                ot_g2v_score as otG2VScore,
                 VEP as vep,
                 GTEx as gtex,
                 PCHiC as pchic,
