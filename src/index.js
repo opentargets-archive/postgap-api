@@ -202,7 +202,6 @@ const resolvers = {
                 leadVariantDiseasesQuery,
                 geneLocationsQuery,
             ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations]) => {
-                console.log(geneVariants)
                 const genesWithLocations = genes.map(d => {
                     const geneLocation = geneLocations[d.id];
                     return {
