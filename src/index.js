@@ -37,7 +37,7 @@ const typeDefs = fs.readFileSync(schemaFile, 'utf8');
 // specify the resolution methods for allowed query
 const resolvers = {
     Query: {
-        locus: (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2 }) => {
+        locus: (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue }) => {
             const params = {$chromosome: chromosome, $start: start, $end: end};
             const oldWhere = `
             WHERE
@@ -50,6 +50,10 @@ const resolvers = {
             }
             if (r2 && r2.length === 2) {
                 filtersSql += ` AND (r2 >= ${r2[0]}) AND (r2 <= ${r2[1]})`;
+            }
+            if (gwasPValue && gwasPValue.length === 2) {
+                // note: need to do reverse -log10 conversion
+                filtersSql += ` AND (gwas_pvalue >= ${10 ** (-gwasPValue[1])}) AND (gwas_pvalue <= ${10 ** (-gwasPValue[0])})`;
             }
             const templateWhere = filtersSql => `
             WHERE
@@ -200,6 +204,21 @@ const resolvers = {
             `;
             const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params)
 
+            // max gwas p-value (unfiltered call to leadVariantDiseases)
+            const maxGwasPValueSql = `
+            SELECT MIN(gwas_pvalue) as minGwasPValue
+            FROM processed
+            ${unfilteredWhere}
+            `;
+            const maxGwasPValueQuery = db.all(maxGwasPValueSql, params)
+            .then(rows => {
+                if (rows && rows.length > 0) {
+                    return -Math.log10(rows[0].minGwasPValue);
+                } else {
+                    return Number.MAX_SAFE_INTEGER;
+                }
+            })
+
 
             // wait for all queries and return composite object
             return Promise.all([
@@ -211,7 +230,8 @@ const resolvers = {
                 variantLeadVariantsQuery,
                 leadVariantDiseasesQuery,
                 geneLocationsQuery,
-            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations]) => {
+                maxGwasPValueQuery
+            ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations, maxGwasPValue]) => {
                 const genesWithLocations = genes.map(d => {
                     const geneLocation = geneLocations[d.id];
                     return {
@@ -227,7 +247,6 @@ const resolvers = {
                         canonicalTranscript: geneLocation.canonicalTranscript
                     }
                 })
-                
                 return {
                     genes: genesWithLocations,
                     variants,
@@ -235,7 +254,8 @@ const resolvers = {
                     diseases,
                     geneVariants: geneVariantsWithLocations,
                     variantLeadVariants,
-                    leadVariantDiseases
+                    leadVariantDiseases,
+                    maxGwasPValue
                 }
             })
         },
