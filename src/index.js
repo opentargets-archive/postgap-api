@@ -37,24 +37,28 @@ const typeDefs = fs.readFileSync(schemaFile, 'utf8');
 // specify the resolution methods for allowed query
 const resolvers = {
     Query: {
-        locus: (_, { chromosome, start, end }) => {
+        locus: (_, { chromosome, start, end, g2VMustHaves }) => {
             const params = {$chromosome: chromosome, $start: start, $end: end};
             const oldWhere = `
             WHERE
                 (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_pos>=$start AND GRCh38_gene_pos<=$end)
                 OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
             `;
-            const commonWhere = `
+            const filtersSql = g2VMustHaves.length > 0 ? (g2VMustHaves.map(d => `AND (${d.toLowerCase()} > 0)`).join(' ')) : '';
+            const templateWhere = filtersSql => `
             WHERE
                 (GRCh38_gene_start IS NOT NULL)
                 AND (GRCh38_gene_end IS NOT NULL)
                 AND (GRCh38_gwas_snp_pos IS NOT NULL)
+                ${filtersSql}
                 AND (
                     (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_start>=$start AND GRCh38_gene_start<=$end)
                     OR (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_end>=$start AND GRCh38_gene_end<=$end)
                     OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
                     OR (GRCh38_gwas_snp_chrom=$chromosome AND GRCh38_gwas_snp_pos>=$start AND GRCh38_gwas_snp_pos<=$end))
             `;
+            const filteredWhere = templateWhere(filtersSql);
+            const unfilteredWhere = templateWhere('');
 
             // genes
             const genesSql = `
@@ -66,7 +70,7 @@ const resolvers = {
                 GRCh38_gene_start as start,
                 GRCh38_gene_end as end
             FROM processed
-            ${commonWhere}
+            ${unfilteredWhere}
             `;
             const genesQuery = db.all(genesSql, params);
 
@@ -106,7 +110,7 @@ const resolvers = {
                 GRCH38_chrom as chromosome,
                 GRCh38_pos as position
             FROM processed
-            ${commonWhere}
+            ${unfilteredWhere}
             `;
             const variantsQuery = db.all(variantsSql, params);
 
@@ -117,7 +121,7 @@ const resolvers = {
                 GRCh38_gwas_snp_chrom as chromosome,
                 GRCh38_gwas_snp_pos as position
             FROM processed
-            ${commonWhere}
+            ${unfilteredWhere}
             `;
             const leadVariantsQuery = db.all(leadVariantsSql, params);
 
@@ -127,7 +131,7 @@ const resolvers = {
                 disease_efo_id as id,
                 disease_name as name
             FROM processed
-            ${commonWhere}
+            ${unfilteredWhere}
             `;
             const diseasesQuery = db.all(diseasesSql, params);
 
@@ -150,7 +154,7 @@ const resolvers = {
                 DHS as dhs,
                 Nearest as nearest
             FROM processed
-            ${commonWhere}
+            ${filteredWhere}
             `;
             const geneVariantsQuery = db.all(geneVariantsSql, params)
 
@@ -166,7 +170,7 @@ const resolvers = {
                 GRCh38_gwas_snp_pos as leadVariantPosition,
                 r2
             FROM processed
-            ${commonWhere}
+            ${filteredWhere}
             `;
             const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params)
 
@@ -186,7 +190,7 @@ const resolvers = {
                 gwas_pmid as gwasPMId,
                 gwas_size as gwasSize
             FROM processed
-            ${commonWhere}
+            ${filteredWhere}
             `;
             const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params)
 
