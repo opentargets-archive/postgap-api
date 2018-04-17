@@ -37,7 +37,7 @@ const typeDefs = fs.readFileSync(schemaFile, 'utf8');
 // specify the resolution methods for allowed query
 const resolvers = {
     Query: {
-        locus: (_, { chromosome, start, end, g2VMustHaves, g2VScore }) => {
+        locus: (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2 }) => {
             const params = {$chromosome: chromosome, $start: start, $end: end};
             const oldWhere = `
             WHERE
@@ -47,6 +47,9 @@ const resolvers = {
             let filtersSql = g2VMustHaves.length > 0 ? (g2VMustHaves.map(d => `AND (${d.toLowerCase()} > 0)`).join(' ')) : '';
             if (g2VScore && g2VScore.length === 2) {
                 filtersSql += ` AND (ot_g2v_score >= ${g2VScore[0]}) AND (ot_g2v_score <= ${g2VScore[1]})`;
+            }
+            if (r2 && r2.length === 2) {
+                filtersSql += ` AND (r2 >= ${r2[0]}) AND (r2 <= ${r2[1]})`;
             }
             const templateWhere = filtersSql => `
             WHERE
