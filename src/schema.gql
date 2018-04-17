@@ -1,5 +1,5 @@
 type Query {
-    locus(chromosome: String, start: Int, end: Int, g2VMustHaves: [String]): DrawableLocus
+    locus(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float]): DrawableLocus
     diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
 }
 type Gene {
