@@ -37,7 +37,7 @@ const typeDefs = fs.readFileSync(schemaFile, 'utf8');
 // specify the resolution methods for allowed query
 const resolvers = {
     Query: {
-        locus: (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue }) => {
+        locus: (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType }) => {
             const params = {$chromosome: chromosome, $start: start, $end: end};
             const oldWhere = `
             WHERE
@@ -69,10 +69,33 @@ const resolvers = {
             `;
             const filteredWhere = templateWhere(filtersSql);
             const unfilteredWhere = templateWhere('');
+            
+            let selectedSql = '';
+            switch (selectedType) {
+                case 'gene':
+                    selectedSql = `COUNT(CASE gene_id WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
+                    break;
+                case 'variant':
+                    selectedSql = `COUNT(CASE ld_snp_rsID WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
+                    break;
+                case 'leadVariant':
+                    selectedSql = `COUNT(CASE gwas_snp WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
+                    break;
+                case 'disease':
+                    selectedSql = `COUNT(CASE disease_efo_id WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
+                    break;
+                // case 'geneVariant':
+                //     const [geneId, variantId] = selectedId.split('-');
+                //     selectedSql = `COUNT(CASE gene_id WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
+                //     break;
+                default:
+                    break;
+            }
 
             // genes
             const genesSql = `
-            SELECT DISTINCT
+            SELECT
+                ${selectedSql}
                 gene_id as id,
                 gene_symbol as symbol,
                 GRCH38_gene_chrom as chromosome,
@@ -81,6 +104,7 @@ const resolvers = {
                 GRCh38_gene_end as end
             FROM processed
             ${unfilteredWhere}
+            GROUP BY gene_id
             `;
             const genesQuery = db.all(genesSql, params);
 
@@ -115,39 +139,46 @@ const resolvers = {
 
             // variants
             const variantsSql = `
-            SELECT DISTINCT
+            SELECT
+                ${selectedSql}
                 ld_snp_rsID as id,
                 GRCH38_chrom as chromosome,
                 GRCh38_pos as position
             FROM processed
             ${unfilteredWhere}
+            GROUP BY ld_snp_rsID
             `;
             const variantsQuery = db.all(variantsSql, params);
 
             // lead variants
             const leadVariantsSql = `
-            SELECT DISTINCT
+            SELECT
+                ${selectedSql}
                 gwas_snp as id,
                 GRCh38_gwas_snp_chrom as chromosome,
                 GRCh38_gwas_snp_pos as position
             FROM processed
             ${unfilteredWhere}
+            GROUP BY gwas_snp
             `;
             const leadVariantsQuery = db.all(leadVariantsSql, params);
 
             // diseases
             const diseasesSql = `
-            SELECT DISTINCT
+            SELECT
+                ${selectedSql}
                 disease_efo_id as id,
                 disease_name as name
             FROM processed
             ${unfilteredWhere}
+            GROUP BY disease_efo_id
             `;
             const diseasesQuery = db.all(diseasesSql, params);
 
             // geneVariants
             const geneVariantsSql = `
-            SELECT DISTINCT
+            SELECT
+                ${selectedSql}
                 (gene_id || "-" || ld_snp_rsID) AS id,
                 gene_id as geneId,
                 gene_symbol as geneSymbol,
@@ -165,12 +196,14 @@ const resolvers = {
                 Nearest as nearest
             FROM processed
             ${filteredWhere}
+            GROUP BY gene_id, ld_snp_rsID
             `;
             const geneVariantsQuery = db.all(geneVariantsSql, params)
 
             // variantLeadVariants
             const variantLeadVariantsSql = `
-            SELECT DISTINCT
+            SELECT
+                ${selectedSql}
                 (ld_snp_rsID || "-" || gwas_snp) AS id,
                 ld_snp_rsID as variantId,
                 GRCH38_chrom as variantChromosome,
@@ -181,12 +214,14 @@ const resolvers = {
                 r2
             FROM processed
             ${filteredWhere}
+            GROUP BY ld_snp_rsID, gwas_snp
             `;
             const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params)
 
             // leadVariantDiseases
             const leadVariantDiseasesSql = `
-            SELECT DISTINCT
+            SELECT
+                ${selectedSql}
                 (gwas_snp || "-" || disease_efo_id) AS id,
                 gwas_snp as leadVariantId,
                 GRCh38_gwas_snp_chrom as leadVariantChromosome,
@@ -201,6 +236,7 @@ const resolvers = {
                 gwas_size as gwasSize
             FROM processed
             ${filteredWhere}
+            GROUP BY gwas_snp, disease_efo_id
             `;
             const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params)
 

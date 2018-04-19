@@ -1,5 +1,5 @@
 type Query {
-    locus(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float]): DrawableLocus
+    locus(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String): DrawableLocus
     diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
 }
 type Gene {
@@ -12,20 +12,24 @@ type Gene {
     end: Int
     forwardStrand: Boolean
     canonicalTranscript: CanonicalTranscript
+    selected: Boolean
 }
 type Variant {
     id: String
     chromosome: String
     position: Int
+    selected: Boolean
 }
 type LeadVariant {
     id: String
     chromosome: String
     position: Int
+    selected: Boolean
 }
 type Disease {
     id: String
     name: String
+    selected: Boolean
 }
 type GeneVariant {
     id: String
@@ -44,6 +48,7 @@ type GeneVariant {
     fantom5: Float
     dhs: Float
     nearest: Boolean
+    selected: Boolean
 }
 type VariantLeadVariant {
     id: String
@@ -54,6 +59,7 @@ type VariantLeadVariant {
     leadVariantChromosome: String
     leadVariantPosition: Int
     r2: Float
+    selected: Boolean
 }
 type LeadVariantDisease {
     id: String
@@ -68,6 +74,7 @@ type LeadVariantDisease {
     gwasStudy: String
     gwasPMId: String
     gwasSize: Int
+    selected: Boolean
 }
 type CanonicalTranscript {
     id: String
