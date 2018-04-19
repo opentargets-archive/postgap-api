@@ -84,13 +84,22 @@ const resolvers = {
                 case 'disease':
                     selectedSql = `COUNT(CASE disease_efo_id WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
                     break;
-                // case 'geneVariant':
-                //     const [geneId, variantId] = selectedId.split('-');
-                //     selectedSql = `COUNT(CASE gene_id WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
-                //     break;
+                case 'geneVariant':
+                    const [geneId, variantId] = selectedId.split('-');
+                    selectedSql = `COUNT(CASE ((gene_id = "${geneId}") AND (ld_snp_rsID = "${variantId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
+                    break;
+                case 'variantLeadVariant':
+                    const [varId, leadVariantId] = selectedId.split('-');
+                    selectedSql = `COUNT(CASE ((ld_snp_rsID = "${varId}") AND (gwas_snp = "${leadVariantId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
+                    break;
+                case 'leadVariantDisease':
+                    const [leadVarId, diseaseId] = selectedId.split('-');
+                    selectedSql = `COUNT(CASE ((gwas_snp = "${leadVarId}") AND (disease_efo_id = "${diseaseId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
+                    break;
                 default:
                     break;
             }
+            const orderBySql = selectedSql ? 'ORDER BY selected' : '';
 
             // genes
             const genesSql = `
@@ -105,6 +114,7 @@ const resolvers = {
             FROM processed
             ${unfilteredWhere}
             GROUP BY gene_id
+            ${orderBySql}
             `;
             const genesQuery = db.all(genesSql, params);
 
@@ -147,6 +157,7 @@ const resolvers = {
             FROM processed
             ${unfilteredWhere}
             GROUP BY ld_snp_rsID
+            ${orderBySql}
             `;
             const variantsQuery = db.all(variantsSql, params);
 
@@ -160,6 +171,7 @@ const resolvers = {
             FROM processed
             ${unfilteredWhere}
             GROUP BY gwas_snp
+            ${orderBySql}
             `;
             const leadVariantsQuery = db.all(leadVariantsSql, params);
 
@@ -172,6 +184,7 @@ const resolvers = {
             FROM processed
             ${unfilteredWhere}
             GROUP BY disease_efo_id
+            ${orderBySql}
             `;
             const diseasesQuery = db.all(diseasesSql, params);
 
@@ -197,6 +210,7 @@ const resolvers = {
             FROM processed
             ${filteredWhere}
             GROUP BY gene_id, ld_snp_rsID
+            ${orderBySql}
             `;
             const geneVariantsQuery = db.all(geneVariantsSql, params)
 
@@ -215,6 +229,7 @@ const resolvers = {
             FROM processed
             ${filteredWhere}
             GROUP BY ld_snp_rsID, gwas_snp
+            ${orderBySql}
             `;
             const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params)
 
@@ -237,6 +252,7 @@ const resolvers = {
             FROM processed
             ${filteredWhere}
             GROUP BY gwas_snp, disease_efo_id
+            ${orderBySql}
             `;
             const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params)
 
