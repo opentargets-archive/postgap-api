@@ -1,5 +1,6 @@
 type Query {
     locus(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String): DrawableLocus
+    locusTable(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String, offset: Int, limit: Int): LocusTable
     diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
 }
 type Gene {
@@ -100,6 +101,12 @@ type DrawableLocus {
     variantLeadVariants: [VariantLeadVariant]
     leadVariantDiseases: [LeadVariantDisease]
     maxGwasPValue: Float
+}
+type LocusTable {
+    rows: [FullTableRow]
+    total: Int
+    offset: Int
+    limit: Int
 }
 type DiseaseTable {
     rows: [FullTableRow]
