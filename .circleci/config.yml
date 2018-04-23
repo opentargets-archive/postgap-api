@@ -20,6 +20,9 @@ jobs:
           key: deps-venv-{{ .Branch }}-{{ checksum "data-prep/requirements.txt" }}
           paths:
             - "venv"
+      - run:
+          name: Update .bashrc to run further commands within venv
+          command: echo "source venv/bin/activate" >> $BASH_ENV
       # transform raw postgap file (and cache)
       # this applies several filters and creates the OT G2V score
       - restore_cache:
