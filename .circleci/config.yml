@@ -10,8 +10,9 @@ jobs:
       - run:
           name: Install and pull from git-lfs
           command: |
-            apt-get update
-            apt-get install -y git-lfs openssh-client
+            sudo curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+            sudo apt-get update
+            sudo apt-get install -y git-lfs openssh-client
             git lfs install
             mkdir -p ~/.ssh
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts
