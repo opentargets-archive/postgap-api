@@ -1,0 +1,92 @@
+version: 2
+jobs:
+  build-and-push-container:
+    docker:
+      - image: circleci/python:3.6.1
+    environment:
+      GCR_REPO: eu.gcr.io/open-targets-eu-dev/postgap-api
+    steps:
+      - checkout
+      # install python deps (and cache)
+      - restore_cache:
+          key: deps-venv-{{ .Branch }}-{{ checksum "data-prep/requirements.txt" }}
+      - run:
+          name: Create virtual environment
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r data-prep/requirements.txt
+      - save_cache:
+          key: deps-venv-{{ .Branch }}-{{ checksum "data-prep/requirements.txt" }}
+          paths:
+            - "venv"
+      # transform raw postgap file (and cache)
+      # this applies several filters and creates the OT G2V score
+      - restore_cache:
+          key: asset-transformed-{{ .Branch }}-{{ checksum "data-prep/transform.py" }}
+      - run:
+          name: Transform raw POSTGAP output to Open Targets format
+          command: |
+            if [ ! -f postgap.20180324.txt.gz.transformed ]; then
+              python data-prep/transform.py data-prep/postgap.20180324.txt.gz
+            fi
+      - save_cache:
+          key: asset-transformed-{{ .Branch }}-{{ checksum "data-prep/transform.py" }}
+          paths:
+            - "postgap.20180324.txt.gz.transformed"
+      # build the sqlite db (and cache)
+      # this calls the Ensembl API to get the gene and lead variant location info
+      # and therefore will likely take some time (hours)
+      - restore_cache:
+          key: asset-sqlite-{{ .Branch }}-{{ checksum "data-prep/build.py" }}
+      - run:
+          name: Transform raw POSTGAP output to Open Targets format
+          command: |
+            if [ ! -f postgap.20180324.db ]; then
+              python data-prep/transform.py data-prep/postgap.20180324.txt.gz
+            fi
+      - save_cache:
+          key: asset-sqlite-{{ .Branch }}-{{ checksum "data-prep/build.py" }}
+          paths:
+            - "postgap.20180324.db"
+      # build docker container
+      - setup_remote_docker
+      - run:
+          name: Build docker image
+          command: |
+            docker build -t circle-${CIRCLE_SHA1} -f Dockerfile .
+      - run:
+          name: Push to Google Container Registry (gcr.io)
+          command: |
+            echo ${GOOGLE_AUTH} | base64 -i --decode > ${HOME}/gcp-key.json
+            docker login -u _json_key -p "$(cat ${HOME}/gcp-key.json)" https://eu.gcr.io
+            if [ -n "${CIRCLE_TAG:+1}" ]; then
+              ## tag tag :) and push
+              echo -e "building for tag ${CIRCLE_TAG}"
+              docker tag circle-${CIRCLE_SHA1} "${GCR_REPO}:${CIRCLE_TAG}"
+              docker push "${GCR_REPO}:${CIRCLE_TAG}"
+              docker tag ${GCR_REPO}:${CIRCLE_TAG} ${GCR_REPO}:circle-${CIRCLE_SHA1}
+            elif [ -n "${CIRCLE_BRANCH:+1}" ]; then
+              ## branch tag and push
+              echo -e "building for branch"
+              docker tag circle-${CIRCLE_SHA1} ${GCR_REPO}:${CIRCLE_BRANCH}
+              docker push ${GCR_REPO}:${CIRCLE_BRANCH}
+              docker tag ${GCR_REPO}:${CIRCLE_BRANCH} ${GCR_REPO}:circle-${CIRCLE_SHA1}
+            else
+              echo -e "### No CIRCLE_TAG or CIRCLE_BRANCH defined"
+              exit 1
+            fi
+            ## sha commit push
+            docker push ${GCR_REPO}:circle-${CIRCLE_SHA1}
+            ## push latest if master
+            if [ "$CIRCLE_BRANCH" = "master" ]
+              then
+                docker tag ${GCR_REPO}:${CIRCLE_BRANCH} ${GCR_REPO}:latest
+                docker push ${GCR_REPO}:latest
+            fi
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-and-push-container

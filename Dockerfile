@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 RUN yarn global add pm2
 
 # Copy in the sqlite database
-COPY postgap.db ./
+COPY postgap.20180324.db ./
 
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
@@ -20,7 +20,7 @@ RUN yarn install
 # Bundle app source
 COPY . .
 
-# TODO: Use production build
+# Use production build
 RUN yarn build
 
 EXPOSE 4000

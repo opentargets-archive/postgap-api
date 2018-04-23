@@ -33,11 +33,12 @@ def build_db(filename):
     '''
     # creates db if db does not exist
     # conn = sqlite3.connect('postgap.db.scored')
-    conn = sqlite3.connect('postgap.20180324.v0.0.1.db')
+    # conn = sqlite3.connect('postgap.20180324.v0.0.1.db')
+    conn = sqlite3.connect('postgap.20180324.db')
     cursor = conn.cursor()
 
     # build raw table
-    build_raw(cursor, conn)
+    build_raw(cursor, conn, filename)
     conn.commit()
 
     # build genes table
@@ -55,7 +56,7 @@ def build_db(filename):
     # close the connection now we are done with it
     conn.close()
 
-def build_raw(cursor, conn):
+def build_raw(cursor, conn, filename):
     # create table from file (file must match OT format - see transform.py)
     df = pd.read_csv(filename, compression='gzip', sep='\t', na_values=['None'])
     df.to_sql('raw', conn)
