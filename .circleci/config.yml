@@ -10,7 +10,7 @@ jobs:
       - run:
           name: Install and pull from git-lfs
           command: |
-            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
       # install python deps (and cache)
       - restore_cache:
           key: deps-venv-{{ .Branch }}-{{ checksum "data-prep/requirements.txt" }}
