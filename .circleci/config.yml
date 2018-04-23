@@ -12,6 +12,7 @@ jobs:
           command: |
             git --version
             echo "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            git lfs install
             git lfs pull
       # install python deps (and cache)
       - restore_cache:
