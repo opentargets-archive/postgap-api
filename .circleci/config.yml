@@ -7,6 +7,10 @@ jobs:
       GCR_REPO: eu.gcr.io/open-targets-eu-dev/postgap-api
     steps:
       - checkout
+      - run:
+          name: Pull from git-lfs
+          command: |
+            git lfs pull
       # install python deps (and cache)
       - restore_cache:
           key: deps-venv-{{ .Branch }}-{{ checksum "data-prep/requirements.txt" }}
