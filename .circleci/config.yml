@@ -28,7 +28,7 @@ jobs:
           name: Transform raw POSTGAP output to Open Targets format
           command: |
             if [ ! -f postgap.20180324.txt.gz.transformed ]; then
-              python data-prep/transform.py data-prep/postgap.20180324.txt.gz
+              python3 data-prep/transform.py data-prep/postgap.20180324.txt.gz
             fi
       - save_cache:
           key: asset-transformed-{{ .Branch }}-{{ checksum "data-prep/transform.py" }}
@@ -43,7 +43,7 @@ jobs:
           name: Transform raw POSTGAP output to Open Targets format
           command: |
             if [ ! -f postgap.20180324.db ]; then
-              python data-prep/transform.py data-prep/postgap.20180324.txt.gz
+              python3 data-prep/transform.py data-prep/postgap.20180324.txt.gz
             fi
       - save_cache:
           key: asset-sqlite-{{ .Branch }}-{{ checksum "data-prep/build.py" }}
