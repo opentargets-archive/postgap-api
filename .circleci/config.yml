@@ -16,7 +16,7 @@ jobs:
             git lfs install
             mkdir -p ~/.ssh
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            ssh git@github.com git-lfs-authenticate "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}" download
+            ssh git@github.com git-lfs-authenticate "opentargets/postgap-api" download
             git lfs pull
       # install python deps (and cache)
       - restore_cache:
