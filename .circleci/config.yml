@@ -8,8 +8,12 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Pull from git-lfs
+          name: Install and pull from git-lfs
           command: |
+            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+            apt-get update
+            apt-get install -y git-lfs openssh-client
+            git lfs install
             git lfs pull
       # install python deps (and cache)
       - restore_cache:
