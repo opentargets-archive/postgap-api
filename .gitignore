@@ -1,5 +1,8 @@
 node_modules
 dist
 *.db
+*.transformed
 data-prep/venv
+data-releases
+tmp
 venv
