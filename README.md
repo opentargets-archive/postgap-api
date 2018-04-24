@@ -1,7 +1,7 @@
 # POSTGAP API
 This is currently an experimental application to build a GraphQL API to serve POSTGAP data specifically for the POSTGAP web application. The main motivations are to improve performance and to enable more flexible queries.
 
-## Usage
+## Development
 ### Build db step
 Assumption: You have downloaded the latest POSTGAP output file (eg `postgap.20180324.txt.gz`) to the root of a clone of this repo.
 
@@ -37,6 +37,26 @@ To run, you might then do the following.
 docker run -p 4000:4000 -d --name=<container-name> <name>:<version>
 ```
 
+## Deployment
+To run an image built locally in the cloud, first push to google cloud:
+```
+# run once
+gcloud auth configure-docker
+# then
+docker tag <LOCAL_IMAGE>:<LOCAL_TAG> eu.gcr.io/open-targets-eu-dev/postgap-api:<TAG_NAME>
+gcloud config set project opent-targets-eu-dev
+docker push eu.gcr.io/open-targets-eu-dev/postgap-api:<TAG_NAME>
+```
+
+Update the tag in `postgap-api.yml` to `TAG_NAME`.
+
+There is a kubernetes cluster set up on google cloud under the project `open-targets-eu-dev`. Replace the existing development cluster. To deploy the new image, run the following:
+```
+kubectl delete deploy/postgap-api
+kubectl create -f postgap-api.yml
+```
+
+**NOTE**: This deployment process is subject to change in the near future. It should eventually be triggered by Circle CI.
 
 ## Inputs
 This application should build on a POSTGAP flat file. This primary file should then be decorated with the following additional columns of data.

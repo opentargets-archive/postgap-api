@@ -1,0 +1,20 @@
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "postgap-api"
+  namespace: "default"
+  labels:
+    app: "postgap-api"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "postgap-api"
+  template:
+    metadata:
+      labels:
+        app: "postgap-api"
+    spec:
+      containers:
+      - name: "postgap-api"
+        image: "eu.gcr.io/open-targets-eu-dev/postgap-api:24052018"
