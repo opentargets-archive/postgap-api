@@ -63,6 +63,9 @@ def calculate_open_targets_score(eco_scores, vep_terms, gtex, pchic, fantom5, dh
 
 
 def calculate_open_targets_scores(pg):
+    if len(pg) == 0:
+        return pg
+
     # load the eco_scores.tsv (which contains mappings from VEP terms to 0-1 values)
     eco_scores_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'eco_scores.tsv')
     eco_scores_df = pd.read_csv(eco_scores_filename, sep='\t', na_values=['None'])
@@ -96,12 +99,12 @@ def open_targets_transform(filename):
     print('{} rows (after filtering gwas_source)'.format(pg.shape[0]))
 
     # filter for chromosomes
-    pg = pg[pg['GRCh38_chrom'].isin(VALID_CHROMOSOMES)]
-    pg = pg[pg['GRCh38_gene_chrom'].isin(VALID_CHROMOSOMES)]
+    pg = pg[pg['GRCh38_chrom'].apply(str).isin(VALID_CHROMOSOMES)]
+    pg = pg[pg['GRCh38_gene_chrom'].apply(str).isin(VALID_CHROMOSOMES)]
     print('{} rows (after filtering for valid chromosomes)'.format(pg.shape[0]))
 
     # filter for gene and snp on same chromosome
-    pg = pg[pg['GRCh38_chrom'] == pg['GRCh38_gene_chrom']]
+    pg = pg[pg['GRCh38_chrom'].apply(str) == pg['GRCh38_gene_chrom'].apply(str)]
     print('{} rows (after filtering for gene-variant chromosome match)'.format(pg.shape[0]))
 
     # filter for gene and snp maximum of 1MB apart
