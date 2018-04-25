@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: postgapapi-ingress
+  annotations:
+    ingress.gcp.kubernetes.io/pre-shared-cert: wild-opentargets-io
+spec:
+  tls:
+  - secretName: wild-opentargets-io
+  backend:
+    serviceName: postgapapi
+    servicePort: 4000
+
+

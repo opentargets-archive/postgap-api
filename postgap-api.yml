@@ -18,3 +18,5 @@ spec:
       containers:
       - name: "postgap-api"
         image: "eu.gcr.io/open-targets-eu-dev/postgap-api:24052018"
+        ports:
+          - containerPort: 4000
