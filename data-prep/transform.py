@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import pandas as pd
 import numpy as np
 
@@ -82,16 +83,17 @@ def calculate_open_targets_scores(pg):
     return pg
 
 
-def open_targets_transform(filename):
+def open_targets_transform(filename,nrows):
     '''
     Iterate the rows in the tsv file and output a new tsv that meets the
     Open Targets format requirements.
     '''
     # load
-    pg = pd.read_csv(filename, sep='\t', na_values=['None'])
+    pg = pd.read_csv(filename, sep='\t', na_values=['None'],nrows=nrows,
+                     dtype={'GRCh38_chrom':str,'GRCh38_gene_chrom':str})
     print('{} rows (input file)'.format(pg.shape[0]))
-    
-    # filter for gwas source 
+
+    # filter for gwas source
     pg = pg[pg['gwas_source'].isin(VALID_GWAS_SOURCES)]
     print('{} rows (after filtering gwas_source)'.format(pg.shape[0]))
 
@@ -113,7 +115,7 @@ def open_targets_transform(filename):
     any_other_score = (pg['VEP'] > 0) | (pg['PCHiC'] > 0) | (pg['Fantom5'] > 0) | (pg['DHS'] > 0) | (pg['Nearest'] > 0)
     pg = pg[valid_gtex | any_other_score]
     print('{} rows (after filtering for valid gtex)'.format(pg.shape[0]))
-    
+
     # calculate the open targets g2v score
     pg = calculate_open_targets_scores(pg)
     print('{} rows (after calculating/filtering for valid g2v score)'.format(pg.shape[0]))
@@ -122,5 +124,12 @@ def open_targets_transform(filename):
     pg.to_csv('{}.transformed'.format(filename), sep='\t', compression='gzip')
 
 if __name__ == '__main__':
-    filename = sys.argv[1]
-    open_targets_transform(filename)
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('filename')
+    parser.add_argument('--sample', action='store_const', const=5000,
+                        help='run on a small subsample')
+
+    args = parser.parse_args()
+    if args.sample:
+        print('Running analysis on the first {} lines'.format(args.sample))
+    open_targets_transform(args.filename, nrows=args.sample)
