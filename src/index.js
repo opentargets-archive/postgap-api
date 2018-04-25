@@ -69,7 +69,7 @@ const resolvers = {
             `;
             const filteredWhere = templateWhere(filtersSql);
             const unfilteredWhere = templateWhere('');
-            
+
             let selectedSql = '';
             switch (selectedType) {
                 case 'gene':
@@ -497,6 +497,8 @@ const app = express();
 app.use(cors())
 app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }))
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
+app.get('/', (req, res) => res.send('All is well at the root!'))
+
 
 // start
 const server = app.listen(4000, () => {
