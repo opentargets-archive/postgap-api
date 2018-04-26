@@ -125,7 +125,7 @@ def open_targets_transform(filename,nrows):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('filename')
+    parser.add_argument('filename', default='https://storage.googleapis.com/postgap-data/postgap.20180324.txt.gz')
     parser.add_argument('--sample', action='store_const', const=5000,
                         help='run on a small subsample')
 
