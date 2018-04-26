@@ -96,7 +96,7 @@ def open_targets_transform(filename,nrows):
     # load
     pg = pd.read_csv(filename, sep='\t', na_values=['None'],nrows=nrows,
                      dtype={'GRCh38_chrom':str,'GRCh38_gene_chrom':str})
-    print('Input file read'.format(pg.shape[0]))
+    print('Input file read')
     print('{} rows (input file)'.format(pg.shape[0]))
 
     # filter for gwas source
