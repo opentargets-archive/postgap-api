@@ -3,14 +3,23 @@ This is currently an experimental application to build a GraphQL API to serve PO
 
 ## Development
 ### Build db step
-Assumption: You have downloaded the latest POSTGAP output file (eg `postgap.20180324.txt.gz`) to the root of a clone of this repo.
 
-TODO: Setup requirements.txt and add instructions here
+Setup python requirements using [pipenv](https://docs.pipenv.org/):
+```sh
+pip3 install --user pipenv #or `brew install pipenv` or `apt install pipenv`
+pipenv install
+```
 
 Transform the data to meet the Open Targets requirements (outputs `<input_file>.transformed`):
 ```
-python3 ./data-prep/transform.py postgap.20180324.txt.gz
+pipenv run python data-prep/transform.py --sample
 ```
+Note: the command above will download a 1GB file and might take a while to execute.
+If you want to run it on a local file, use instead:
+```sh
+pipenv run python data-prep/transform.py -f <yourpostgap.file.txt> --sample
+```
+
 
 Build the `sqlite3` database (outputs `postgap.db`):
 ```

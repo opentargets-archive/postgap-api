@@ -3,6 +3,8 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
 
 VALID_CHROMOSOMES = [*[str(chr) for chr in range(23)], 'X', 'Y']
 VALID_GWAS_SOURCES = ['GWAS Catalog']
@@ -94,6 +96,7 @@ def open_targets_transform(filename,nrows):
     # load
     pg = pd.read_csv(filename, sep='\t', na_values=['None'],nrows=nrows,
                      dtype={'GRCh38_chrom':str,'GRCh38_gene_chrom':str})
+    print('Input file read'.format(pg.shape[0]))
     print('{} rows (input file)'.format(pg.shape[0]))
 
     # filter for gwas source
@@ -124,11 +127,12 @@ def open_targets_transform(filename,nrows):
     print('{} rows (after calculating/filtering for valid g2v score)'.format(pg.shape[0]))
 
     # write out
-    pg.to_csv('{}.transformed'.format(filename), sep='\t', compression='gzip')
+
+    pg.to_csv('{}.transformed'.format(Path(filename).stem), sep='\t', compression='gzip')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('filename', default='https://storage.googleapis.com/postgap-data/postgap.20180324.txt.gz')
+    parser.add_argument('-filename', default='https://storage.googleapis.com/postgap-data/postgap.20180324.txt.gz')
     parser.add_argument('--sample', action='store_const', const=5000,
                         help='run on a small subsample')
 
