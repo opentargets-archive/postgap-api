@@ -10,7 +10,7 @@ import sqlite3 from 'sqlite3';
 import {promisify} from 'bluebird';
 
 // open a connection to the database
-let db = new sqlite3.Database('postgap.20180324.db', sqlite3.OPEN_READONLY, err => {
+let db = new sqlite3.Database('postgap.db', sqlite3.OPEN_READONLY, err => {
     if (err) {
         console.error(err.message)
     } else {

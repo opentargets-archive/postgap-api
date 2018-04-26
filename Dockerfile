@@ -6,7 +6,8 @@ WORKDIR /usr/src/app
 RUN yarn global add pm2
 
 # Copy in the sqlite database
-COPY postgap.20180324.db ./
+COPY postgap.20180324.sample.db ./postgap.db
+#TODO we should declare a VOLUME here
 
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
