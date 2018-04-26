@@ -492,10 +492,13 @@ const resolvers = {
 // merge schema with resolvers
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 
+const corsOptions = {
+    preflightContinue: false
+};
+
 // create express app
 const app = express();
-app.use(cors())
-app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }))
+app.use('/graphql', cors(corsOptions), bodyParser.json(), graphqlExpress({ schema }))
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
 app.get('/', (req, res) => res.send('All is well at the root!'))
 

@@ -1,0 +1,8 @@
+# Sequential filtering
+29653618 rows (input file)
+29653618 rows (after filtering gwas_source)
+29653618 rows (after filtering for valid chromosomes)
+29644070 rows (after filtering for gene-variant chromosome match)
+29010883 rows (after filtering for gene-variant distance)
+5249503 rows (after filtering for valid gtex)
+5120405 rows (after calculating/filtering for valid g2v score)

@@ -2,6 +2,7 @@ node_modules
 data-prep
 data-releases
 certs
+data-analysis
 tmp
 .git
 .gitignore

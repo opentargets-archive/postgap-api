@@ -1,8 +1,11 @@
 *.db
+*.transformed
 data-prep/venv
 tmp/
 certs/
 *.transformed
+data-releases
+
 
 
 # Created by https://www.gitignore.io/api/node,python,visualstudiocode
