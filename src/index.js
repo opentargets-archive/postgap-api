@@ -2,12 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
+import responseTime from 'response-time';
 import bodyParser from 'body-parser';
 import { graphqlExpress, graphiqlExpress } from 'apollo-server-express';
 import { buildSchema } from 'graphql';
 import { makeExecutableSchema } from 'graphql-tools';
 import sqlite3 from 'sqlite3';
-import {promisify} from 'bluebird';
+import { promisify } from 'bluebird';
 
 // open a connection to the database
 let db = new sqlite3.Database('postgap.20180324.db', sqlite3.OPEN_READONLY, err => {
@@ -498,7 +499,7 @@ const corsOptions = {
 
 // create express app
 const app = express();
-app.use('/graphql', cors(corsOptions), bodyParser.json(), graphqlExpress({ schema }))
+app.use('/graphql', responseTime(), cors(corsOptions), bodyParser.json(), graphqlExpress({ schema }))
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
 
 // start
