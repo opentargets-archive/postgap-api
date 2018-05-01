@@ -106,7 +106,7 @@ const getSelectedSql = ({ selectedId, selectedType }) => {
 // specify the resolution methods for allowed query
 const resolvers = {
     Query: {
-        locus: (_, args) => {
+        locus: (_, args, { db }) => {
             const { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType } = args;
             const params = {$chromosome: chromosome, $start: start, $end: end};
             
@@ -327,7 +327,7 @@ const resolvers = {
                 }
             })
         },
-        locusTable: (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType, offset, limit }) => {
+        locusTable: (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType, offset, limit }, { db }) => {
             const params = {$chromosome: chromosome, $start: start, $end: end, $offset: offset, $limit: limit};
             const paramsWithoutPagination = { $chromosome: chromosome, $start: start, $end: end };
             let filtersSql = g2VMustHaves.length > 0 ? (g2VMustHaves.map(d => `AND (${d.toLowerCase()} > 0)`).join(' ')) : '';
@@ -443,7 +443,7 @@ const resolvers = {
                 }
             })
         },
-        diseaseTable: (_, { efoId, offset, limit }) => {
+        diseaseTable: (_, { efoId, offset, limit }, { db }) => {
             const params = {$efoId: efoId, $offset: offset, $limit: limit};
 
             // rows
@@ -529,9 +529,14 @@ const corsOptions = {
     preflightContinue: false
 };
 
+// context for resolvers
+const context = {
+    db
+};
+
 // create express app
 const app = express();
-app.use('/graphql', responseTime(), cors(corsOptions), bodyParser.json(), graphqlExpress({ schema }))
+app.use('/graphql', responseTime(), cors(corsOptions), bodyParser.json(), graphqlExpress({ schema, context }))
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
 
 // start
