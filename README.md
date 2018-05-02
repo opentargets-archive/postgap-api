@@ -23,7 +23,7 @@ pipenv run python data-prep/transform.py -f <yourpostgap.file.txt> --sample
 
 Build the `sqlite3` database (outputs `postgap.db`):
 ```
-python3 ./data-prep/build.py postgap.20180324.txt.gz.transformed
+python3 ./data-prep/build.py /data-prep/postgap.20180324.txt.transformed
 ```
 
 ### GraphQL server
