@@ -10,7 +10,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import sqlite3 from 'sqlite3';
 import { promisify } from 'bluebird';
 import { addMiddleware } from 'graphql-add-middleware';
-import locus from './resolvers/locus';
+import locus, { resolveLocus } from './resolvers/locus';
 import locusTable from './resolvers/locusTable';
 import diseaseTable from './resolvers/diseaseTable';
 
@@ -27,44 +27,59 @@ let db = new sqlite3.Database('postgap.20180324.db', sqlite3.OPEN_READONLY, err 
 db.all = promisify(db.all);
 db.get = promisify(db.get);
 
+// sqlite3 emits a profile event whenever sql is executed
+// use this to log query execution times (where the sql is commented
+// with a query type)
+db.on('profile', (sql, ms) => {
+    const queryTypeRegex = /SQL_QUERY_TYPE=(\w*)/
+    const matches = sql.match(queryTypeRegex);
+    if (matches) {
+        const queryType = matches[1];
+        console.log('sql-execution-time', queryType, ms)
+    }
+});
+
 // total number of genes is ~20,000,
 // so cache ensembl calls on an object
-let geneCache = {};
-
-// total number of lead variants is ~40,000 (which need location info),
-// so cache ensembl calls on an object
-let leadVariantCache = {};
+let geneLocationsCache = {};
+const geneLocationsSql = `
+-- SQL_QUERY_TYPE=loadGeneLocations
+SELECT DISTINCT
+    gene_id as geneId,
+    description,
+    strand,
+    canonical_transcript as canonicalTranscript
+FROM gene
+`;
+db.all(geneLocationsSql).then(genes => {
+    // create a lookup cache
+    genes.forEach(d => {
+        geneLocationsCache[d.geneId] = {
+            geneId: d.geneId,
+            description: d.description,
+            forwardStrand: (d.strand === 1),
+            canonicalTranscript: JSON.parse(d.canonicalTranscript)
+        }
+    });
+});
 
 // load the schema
 const schemaFile = path.join(__dirname, 'schema.gql');
 const typeDefs = fs.readFileSync(schemaFile, 'utf8');
 
-
-
 // specify the resolution methods for allowed query
 const resolvers = {
     Query: {
-        locus,
+        locus: resolveLocus,
         locusTable,
         diseaseTable
     },
+    DrawableLocus: locus
 };
 
 // merge schema with resolvers
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-// timing helper (per resolver)
-const timeResolver = async (rootValue, args, context, info, next) => {
-    const start = Date.now();
-    const result = await next();
-    const end = Date.now();
-    console.log(`Query.locus took: ${end - start}ms`);
-    return result;
-};
-
-// time specific resolver calculations
-addMiddleware(schema, 'Query.locus', timeResolver);
-addMiddleware(schema, 'Query.locus.genes', timeResolver);
 
 // setup cors options
 const corsOptions = {
@@ -73,7 +88,8 @@ const corsOptions = {
 
 // context for resolvers
 const context = {
-    db
+    db,
+    geneLocationsCache
 };
 
 // create express app

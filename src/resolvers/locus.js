@@ -65,19 +65,28 @@ const getSelectedSql = ({ selectedId, selectedType }) => {
     return selectedSql;
 }
 
-const resolveDrawableLocus = (_, args, { db }) => {
+const commonSetup = (args) => {
     const { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType } = args;
     const params = {$chromosome: chromosome, $start: start, $end: end};
-    
     
     const filteredWhere = getFilteredLocusWhereSql(args);
     const unfilteredWhere = getUnfilteredLocusWhereSql();
     
     let selectedSql = getSelectedSql(args);
     const orderBySql = selectedSql ? 'ORDER BY selected' : '';
+    return {
+        filteredWhere,
+        unfilteredWhere,
+        selectedSql,
+        orderBySql,
+        params
+    };
+};
 
-    // genes
+const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const genesSql = `
+    -- SQL_QUERY_TYPE=genes
     SELECT
         ${selectedSql}
         gene_id as id,
@@ -91,39 +100,25 @@ const resolveDrawableLocus = (_, args, { db }) => {
     GROUP BY gene_id
     ${orderBySql}
     `;
-    const genesQuery = db.all(genesSql, params);
 
-    // gene locations (from Ensembl)
-    const geneLocationsQuery = genesQuery.then(genes => {
-        // retrieve canonical transcript info for each gene from gene table
-        const geneIds = genes.map(d => d.id);
-        const geneLocationsSql = `
-        SELECT DISTINCT
-            gene_id as geneId,
-            description,
-            strand,
-            canonical_transcript as canonicalTranscript
-        FROM gene
-        WHERE
-            gene_id IN ("${geneIds.join('","')}")
-        `;
-        return db.all(geneLocationsSql).then(genes => {
-            // create a lookup
-            const geneLookup = {};
-            genes.forEach(d => {
-                geneLookup[d.geneId] = {
-                    geneId: d.geneId,
-                    description: d.description,
-                    forwardStrand: (d.strand === 1),
-                    canonicalTranscript: JSON.parse(d.canonicalTranscript)
-                }
-            })
-            return geneLookup;
-        })
+    const genesQuery = db.all(genesSql, params).then(genes => {
+        const genesWithLocations = genes.map(d => {
+            const geneLocation = geneLocationsCache[d.id];
+            return {
+                ...d,
+                forwardStrand: geneLocation.forwardStrand,
+                canonicalTranscript: geneLocation.canonicalTranscript
+            }
+        });
+        return genesWithLocations;
     });
+    return genesQuery;
+}
 
-    // variants
+const resolveVariants = ({ common }, args, { db }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const variantsSql = `
+    -- SQL_QUERY_TYPE=variants
     SELECT
         ${selectedSql}
         ld_snp_rsID as id,
@@ -135,9 +130,13 @@ const resolveDrawableLocus = (_, args, { db }) => {
     ${orderBySql}
     `;
     const variantsQuery = db.all(variantsSql, params);
+    return variantsQuery;
+}
 
-    // lead variants
+const resolveLeadVariants = ({ common }, args, { db }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const leadVariantsSql = `
+    -- SQL_QUERY_TYPE=leadVariants
     SELECT
         ${selectedSql}
         gwas_snp as id,
@@ -149,9 +148,13 @@ const resolveDrawableLocus = (_, args, { db }) => {
     ${orderBySql}
     `;
     const leadVariantsQuery = db.all(leadVariantsSql, params);
+    return leadVariantsQuery;
+}
 
-    // diseases
+const resolveDiseases = ({ common }, args, { db }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const diseasesSql = `
+    -- SQL_QUERY_TYPE=diseases
     SELECT
         ${selectedSql}
         disease_efo_id as id,
@@ -162,9 +165,13 @@ const resolveDrawableLocus = (_, args, { db }) => {
     ${orderBySql}
     `;
     const diseasesQuery = db.all(diseasesSql, params);
+    return diseasesQuery;
+}
 
-    // geneVariants
+const resolveGeneVariants = ({ common }, args, { db, geneLocationsCache }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const geneVariantsSql = `
+    -- SQL_QUERY_TYPE=geneVariants
     SELECT
         ${selectedSql}
         (gene_id || "-" || ld_snp_rsID) AS id,
@@ -187,10 +194,23 @@ const resolveDrawableLocus = (_, args, { db }) => {
     GROUP BY gene_id, ld_snp_rsID
     ${orderBySql}
     `;
-    const geneVariantsQuery = db.all(geneVariantsSql, params)
+    const geneVariantsQuery = db.all(geneVariantsSql, params).then(geneVariants => {
+        const geneVariantsWithLocations = geneVariants.map(d => {
+            const geneLocation = geneLocationsCache[d.geneId];
+            return {
+                ...d,
+                canonicalTranscript: geneLocation.canonicalTranscript
+            };
+        });
+        return geneVariantsWithLocations;
+    });
+    return geneVariantsQuery;
+}
 
-    // variantLeadVariants
+const resolveVariantLeadVariants = ({ common }, args, { db }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const variantLeadVariantsSql = `
+    -- SQL_QUERY_TYPE=variantLeadVariants
     SELECT
         ${selectedSql}
         (ld_snp_rsID || "-" || gwas_snp) AS id,
@@ -206,10 +226,14 @@ const resolveDrawableLocus = (_, args, { db }) => {
     GROUP BY ld_snp_rsID, gwas_snp
     ${orderBySql}
     `;
-    const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params)
+    const variantLeadVariantsQuery = db.all(variantLeadVariantsSql, params);
+    return variantLeadVariantsQuery;
+}
 
-    // leadVariantDiseases
+const resolveLeadVariantDiseases = ({ common }, args, { db }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const leadVariantDiseasesSql = `
+    -- SQL_QUERY_TYPE=leadVariantDiseases
     SELECT
         ${selectedSql}
         (gwas_snp || "-" || disease_efo_id) AS id,
@@ -229,10 +253,14 @@ const resolveDrawableLocus = (_, args, { db }) => {
     GROUP BY gwas_snp, disease_efo_id
     ${orderBySql}
     `;
-    const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params)
+    const leadVariantDiseasesQuery = db.all(leadVariantDiseasesSql, params);
+    return leadVariantDiseasesQuery;
+}
 
-    // max gwas p-value (unfiltered call to leadVariantDiseases)
+const resolveMaxGwasPValue = ({ common }, args, { db }) => {
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
     const maxGwasPValueSql = `
+    -- SQL_QUERY_TYPE=maxGwasPValue
     SELECT MIN(gwas_pvalue) as minGwasPValue
     FROM processed
     ${unfilteredWhere}
@@ -244,47 +272,24 @@ const resolveDrawableLocus = (_, args, { db }) => {
         } else {
             return Number.MAX_SAFE_INTEGER;
         }
-    })
+    });
+    return maxGwasPValueQuery;
+}
 
-
-    // wait for all queries and return composite object
-    return Promise.all([
-        genesQuery,
-        variantsQuery,
-        leadVariantsQuery,
-        diseasesQuery,
-        geneVariantsQuery,
-        variantLeadVariantsQuery,
-        leadVariantDiseasesQuery,
-        geneLocationsQuery,
-        maxGwasPValueQuery
-    ]).then(([genes, variants, leadVariants, diseases, geneVariants, variantLeadVariants, leadVariantDiseases, geneLocations, maxGwasPValue]) => {
-        const genesWithLocations = genes.map(d => {
-            const geneLocation = geneLocations[d.id];
-            return {
-                ...d,
-                forwardStrand: geneLocation.forwardStrand,
-                canonicalTranscript: geneLocation.canonicalTranscript
-            }
-        })
-        const geneVariantsWithLocations = geneVariants.map(d => {
-            const geneLocation = geneLocations[d.geneId];
-            return {
-                ...d,
-                canonicalTranscript: geneLocation.canonicalTranscript
-            }
-        })
-        return {
-            genes: genesWithLocations,
-            variants,
-            leadVariants,
-            diseases,
-            geneVariants: geneVariantsWithLocations,
-            variantLeadVariants,
-            leadVariantDiseases,
-            maxGwasPValue
-        }
-    })
+export const resolveLocus = (_, args) => {
+    const common = commonSetup(args);
+    return { common };
 };
+
+const resolveDrawableLocus = {
+    genes: resolveGenes,
+    variants: resolveVariants,
+    leadVariants: resolveLeadVariants,
+    diseases: resolveDiseases,
+    geneVariants: resolveGeneVariants,
+    variantLeadVariants: resolveVariantLeadVariants,
+    leadVariantDiseases: resolveLeadVariantDiseases,
+    maxGwasPValue: resolveMaxGwasPValue
+}
 
 export default resolveDrawableLocus;
