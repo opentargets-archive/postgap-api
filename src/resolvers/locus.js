@@ -20,10 +20,10 @@ WHERE
     AND (GRCh38_gwas_snp_pos IS NOT NULL)
     ${filtersSql}
     AND (
-        (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_start>=$start AND GRCh38_gene_start<=$end)
-        OR (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_end>=$start AND GRCh38_gene_end<=$end)
-        OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
-        OR (GRCh38_gwas_snp_chrom=$chromosome AND GRCh38_gwas_snp_pos>=$start AND GRCh38_gwas_snp_pos<=$end))
+        (GRCh38_gene_start>=$start AND GRCh38_gene_start<=$end)
+        OR (GRCh38_gene_end>=$start AND GRCh38_gene_end<=$end)
+        OR (GRCh38_pos>=$start AND GRCh38_pos<=$end)
+        OR (GRCh38_gwas_snp_pos>=$start AND GRCh38_gwas_snp_pos<=$end))
 `;
 const getFilteredLocusWhereSql = (args) => {
     const filtersSql = getLocusFiltersSql(args)
@@ -67,7 +67,8 @@ const getSelectedSql = ({ selectedId, selectedType }) => {
 
 const commonSetup = (args) => {
     const { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType } = args;
-    const params = {$chromosome: chromosome, $start: start, $end: end};
+    const params = { $start: start, $end: end };
+    const tableName = `chr_${chromosome}`;
     
     const filteredWhere = getFilteredLocusWhereSql(args);
     const unfilteredWhere = getUnfilteredLocusWhereSql();
@@ -75,6 +76,7 @@ const commonSetup = (args) => {
     let selectedSql = getSelectedSql(args);
     const orderBySql = selectedSql ? 'ORDER BY selected' : '';
     return {
+        tableName,
         filteredWhere,
         unfilteredWhere,
         selectedSql,
@@ -84,7 +86,7 @@ const commonSetup = (args) => {
 };
 
 const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const genesSql = `
     -- SQL_QUERY_TYPE=genes
     SELECT
@@ -95,13 +97,14 @@ const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
         GRCh38_gene_pos as tss,
         GRCh38_gene_start as start,
         GRCh38_gene_end as end
-    FROM processed
+    FROM ${tableName}
     ${unfilteredWhere}
     GROUP BY gene_id
     ${orderBySql}
     `;
 
     const genesQuery = db.all(genesSql, params).then(genes => {
+        const start = Date.now();
         const genesWithLocations = genes.map(d => {
             const geneLocation = geneLocationsCache[d.id];
             return {
@@ -110,13 +113,15 @@ const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
                 canonicalTranscript: geneLocation.canonicalTranscript
             }
         });
+        const end = Date.now();
+        console.log('gene-location-inject-time', 'genes', end - start);
         return genesWithLocations;
     });
     return genesQuery;
 }
 
 const resolveVariants = ({ common }, args, { db }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const variantsSql = `
     -- SQL_QUERY_TYPE=variants
     SELECT
@@ -124,7 +129,7 @@ const resolveVariants = ({ common }, args, { db }) => {
         ld_snp_rsID as id,
         GRCH38_chrom as chromosome,
         GRCh38_pos as position
-    FROM processed
+        FROM ${tableName}
     ${unfilteredWhere}
     GROUP BY ld_snp_rsID
     ${orderBySql}
@@ -134,7 +139,7 @@ const resolveVariants = ({ common }, args, { db }) => {
 }
 
 const resolveLeadVariants = ({ common }, args, { db }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const leadVariantsSql = `
     -- SQL_QUERY_TYPE=leadVariants
     SELECT
@@ -142,7 +147,7 @@ const resolveLeadVariants = ({ common }, args, { db }) => {
         gwas_snp as id,
         GRCh38_gwas_snp_chrom as chromosome,
         GRCh38_gwas_snp_pos as position
-    FROM processed
+    FROM ${tableName}
     ${unfilteredWhere}
     GROUP BY gwas_snp
     ${orderBySql}
@@ -152,14 +157,14 @@ const resolveLeadVariants = ({ common }, args, { db }) => {
 }
 
 const resolveDiseases = ({ common }, args, { db }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const diseasesSql = `
     -- SQL_QUERY_TYPE=diseases
     SELECT
         ${selectedSql}
         disease_efo_id as id,
         disease_name as name
-    FROM processed
+    FROM ${tableName}
     ${unfilteredWhere}
     GROUP BY disease_efo_id
     ${orderBySql}
@@ -169,7 +174,7 @@ const resolveDiseases = ({ common }, args, { db }) => {
 }
 
 const resolveGeneVariants = ({ common }, args, { db, geneLocationsCache }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const geneVariantsSql = `
     -- SQL_QUERY_TYPE=geneVariants
     SELECT
@@ -189,12 +194,13 @@ const resolveGeneVariants = ({ common }, args, { db, geneLocationsCache }) => {
         Fantom5 as fantom5,
         DHS as dhs,
         Nearest as nearest
-    FROM processed
+    FROM ${tableName}
     ${filteredWhere}
     GROUP BY gene_id, ld_snp_rsID
     ${orderBySql}
     `;
     const geneVariantsQuery = db.all(geneVariantsSql, params).then(geneVariants => {
+        const start = Date.now();
         const geneVariantsWithLocations = geneVariants.map(d => {
             const geneLocation = geneLocationsCache[d.geneId];
             return {
@@ -202,13 +208,15 @@ const resolveGeneVariants = ({ common }, args, { db, geneLocationsCache }) => {
                 canonicalTranscript: geneLocation.canonicalTranscript
             };
         });
+        const end = Date.now();
+        console.log('gene-location-inject-time', 'geneVariants', end - start);
         return geneVariantsWithLocations;
     });
     return geneVariantsQuery;
 }
 
 const resolveVariantLeadVariants = ({ common }, args, { db }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const variantLeadVariantsSql = `
     -- SQL_QUERY_TYPE=variantLeadVariants
     SELECT
@@ -221,7 +229,7 @@ const resolveVariantLeadVariants = ({ common }, args, { db }) => {
         GRCh38_gwas_snp_chrom as leadVariantChromosome,
         GRCh38_gwas_snp_pos as leadVariantPosition,
         r2
-    FROM processed
+    FROM ${tableName}
     ${filteredWhere}
     GROUP BY ld_snp_rsID, gwas_snp
     ${orderBySql}
@@ -231,7 +239,7 @@ const resolveVariantLeadVariants = ({ common }, args, { db }) => {
 }
 
 const resolveLeadVariantDiseases = ({ common }, args, { db }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const leadVariantDiseasesSql = `
     -- SQL_QUERY_TYPE=leadVariantDiseases
     SELECT
@@ -248,7 +256,7 @@ const resolveLeadVariantDiseases = ({ common }, args, { db }) => {
         gwas_study as gwasStudy,
         gwas_pmid as gwasPMId,
         gwas_size as gwasSize
-    FROM processed
+    FROM ${tableName}
     ${filteredWhere}
     GROUP BY gwas_snp, disease_efo_id
     ${orderBySql}
@@ -258,11 +266,11 @@ const resolveLeadVariantDiseases = ({ common }, args, { db }) => {
 }
 
 const resolveMaxGwasPValue = ({ common }, args, { db }) => {
-    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params } = common;
+    const { filteredWhere, unfilteredWhere, selectedSql, orderBySql, params, tableName } = common;
     const maxGwasPValueSql = `
     -- SQL_QUERY_TYPE=maxGwasPValue
     SELECT MIN(gwas_pvalue) as minGwasPValue
-    FROM processed
+    FROM ${tableName}
     ${unfilteredWhere}
     `;
     const maxGwasPValueQuery = db.all(maxGwasPValueSql, params)
