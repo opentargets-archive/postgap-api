@@ -94,7 +94,6 @@ const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
         gene_id as id,
         gene_symbol as symbol,
         GRCH38_gene_chrom as chromosome,
-        GRCh38_gene_pos as tss,
         GRCh38_gene_start as start,
         GRCh38_gene_end as end
     FROM ${tableName}
@@ -110,7 +109,11 @@ const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
             return {
                 ...d,
                 forwardStrand: geneLocation.forwardStrand,
-                canonicalTranscript: geneLocation.canonicalTranscript
+                // canonicalTranscript: geneLocation.canonicalTranscript
+                tss: geneLocation.tss,
+                start: geneLocation.start,
+                end: geneLocation.end,
+                exons: geneLocation.exons
             }
         });
         const end = Date.now();
@@ -202,7 +205,8 @@ const resolveGeneVariants = ({ common }, args, { db, geneLocationsCache }) => {
             const geneLocation = geneLocationsCache[d.geneId];
             return {
                 ...d,
-                canonicalTranscript: geneLocation.canonicalTranscript
+                // canonicalTranscript: geneLocation.canonicalTranscript
+                geneTss: geneLocation.tss
             };
         });
         const end = Date.now();
