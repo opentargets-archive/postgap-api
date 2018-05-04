@@ -82,15 +82,10 @@ type CanonicalTranscript {
     start: Int
     end: Int
     forwardStrand: Boolean
-    exons: [Exon]
+    exons: [[Int]]
     tss: Int
     translationStart: Int
     translationEnd: Int
-}
-type Exon {
-    id: String
-    start: Int
-    end: Int
 }
 type DrawableLocus {
     genes: [Gene]

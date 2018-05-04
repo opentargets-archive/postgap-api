@@ -84,11 +84,16 @@ function initGeneLocationCache(db) {
     db.all(geneLocationsSql).then(genes => {
         // create a lookup cache
         genes.forEach(d => {
+            let canonicalTranscript = JSON.parse(d.canonicalTranscript);
+            canonicalTranscript = {
+                ...canonicalTranscript,
+                exons: canonicalTranscript.exons.map(exon => ([exon.start, exon.end]))
+            };
             geneLocationsCache[d.geneId] = {
                 geneId: d.geneId,
                 description: d.description,
                 forwardStrand: (d.strand === 1),
-                canonicalTranscript: JSON.parse(d.canonicalTranscript)
+                canonicalTranscript
             }
         });
     });
