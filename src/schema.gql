@@ -17,13 +17,13 @@ type Gene {
 }
 type Variant {
     id: String
-    chromosome: String
+    # chromosome: String
     position: Int
     selected: Boolean
 }
 type LeadVariant {
     id: String
-    chromosome: String
+    # chromosome: String
     position: Int
     selected: Boolean
 }
@@ -40,7 +40,7 @@ type GeneVariant {
     geneTss: Int
     canonicalTranscript: CanonicalTranscript
     variantId: String
-    variantChromosome: String
+    # variantChromosome: String
     variantPosition: Int
     otG2VScore: Float
     vep: Float
@@ -54,10 +54,10 @@ type GeneVariant {
 type VariantLeadVariant {
     id: String
     variantId: String
-    variantChromosome: String
+    # variantChromosome: String
     variantPosition: Int
     leadVariantId: String
-    leadVariantChromosome: String
+    # leadVariantChromosome: String
     leadVariantPosition: Int
     r2: Float
     selected: Boolean
@@ -65,7 +65,7 @@ type VariantLeadVariant {
 type LeadVariantDisease {
     id: String
     leadVariantId: String
-    leadVariantChromosome: String
+    # leadVariantChromosome: String
     leadVariantPosition: Int
     efoId: String
     efoName: String

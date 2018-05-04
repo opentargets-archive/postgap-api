@@ -127,7 +127,6 @@ const resolveVariants = ({ common }, args, { db }) => {
     SELECT
         ${selectedSql}
         ld_snp_rsID as id,
-        GRCH38_chrom as chromosome,
         GRCh38_pos as position
         FROM ${tableName}
     ${unfilteredWhere}
@@ -145,7 +144,6 @@ const resolveLeadVariants = ({ common }, args, { db }) => {
     SELECT
         ${selectedSql}
         gwas_snp as id,
-        GRCh38_gwas_snp_chrom as chromosome,
         GRCh38_gwas_snp_pos as position
     FROM ${tableName}
     ${unfilteredWhere}
@@ -185,7 +183,6 @@ const resolveGeneVariants = ({ common }, args, { db, geneLocationsCache }) => {
         GRCH38_gene_chrom as geneChromosome,
         GRCh38_gene_pos as geneTss,
         ld_snp_rsID as variantId,
-        GRCH38_chrom as variantChromosome,
         GRCh38_pos as variantPosition,
         ot_g2v_score as otG2VScore,
         VEP as vep,
@@ -223,10 +220,8 @@ const resolveVariantLeadVariants = ({ common }, args, { db }) => {
         ${selectedSql}
         (ld_snp_rsID || "-" || gwas_snp) AS id,
         ld_snp_rsID as variantId,
-        GRCH38_chrom as variantChromosome,
         GRCh38_pos as variantPosition,
         gwas_snp as leadVariantId,
-        GRCh38_gwas_snp_chrom as leadVariantChromosome,
         GRCh38_gwas_snp_pos as leadVariantPosition,
         r2
     FROM ${tableName}
@@ -246,7 +241,6 @@ const resolveLeadVariantDiseases = ({ common }, args, { db }) => {
         ${selectedSql}
         (gwas_snp || "-" || disease_efo_id) AS id,
         gwas_snp as leadVariantId,
-        GRCh38_gwas_snp_chrom as leadVariantChromosome,
         GRCh38_gwas_snp_pos as leadVariantPosition,
         disease_efo_id as efoId,
         disease_name as efoName,
