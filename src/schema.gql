@@ -40,9 +40,9 @@ type GeneVariant {
     # geneChromosome: String
     geneTss: Int
     # canonicalTranscript: CanonicalTranscript
-    variantId: String
+    vId: String
     # variantChromosome: String
-    variantPosition: Int
+    vPos: Int
     otG2VScore: Float
     vep: Float
     gtex: Float
@@ -54,9 +54,9 @@ type GeneVariant {
 }
 type VariantLeadVariant {
     id: String
-    variantId: String
+    vId: String
     # variantChromosome: String
-    variantPosition: Int
+    vPos: Int
     lvId: String
     # leadVariantChromosome: String
     lvPos: Int
@@ -116,9 +116,9 @@ type FullTableRow {
     geneSymbol: String
     geneChromosome: String
     geneTss: Int
-    variantId: String
+    vId: String
     variantChromosome: String
-    variantPosition: Int
+    vPos: Int
     lvId: String
     efoId: String
     efoName: String

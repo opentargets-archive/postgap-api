@@ -48,8 +48,8 @@ const getSelectedSql = ({ selectedId, selectedType }) => {
             selectedSql = `COUNT(CASE disease_efo_id WHEN "${selectedId}" THEN 1 ELSE null END) > 0 AS selected,`;
             break;
         case 'geneVariant':
-            const [geneId, variantId] = selectedId.split('-');
-            selectedSql = `COUNT(CASE ((gene_id = "${geneId}") AND (ld_snp_rsID = "${variantId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
+            const [geneId, vId] = selectedId.split('-');
+            selectedSql = `COUNT(CASE ((gene_id = "${geneId}") AND (ld_snp_rsID = "${vId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
             break;
         case 'variantLeadVariant':
             const [varId, lvId] = selectedId.split('-');
@@ -185,8 +185,8 @@ const resolveGeneVariants = ({ common }, args, { db, geneLocationsCache }) => {
         gene_symbol as geneSymbol,
         GRCH38_gene_chrom as geneChromosome,
         GRCh38_gene_pos as geneTss,
-        ld_snp_rsID as variantId,
-        GRCh38_pos as variantPosition,
+        ld_snp_rsID as vId,
+        GRCh38_pos as vPos,
         ot_g2v_score as otG2VScore,
         VEP as vep,
         GTEx as gtex,
@@ -223,8 +223,8 @@ const resolveVariantLeadVariants = ({ common }, args, { db }) => {
     SELECT
         ${selectedSql}
         (ld_snp_rsID || "-" || gwas_snp) AS id,
-        ld_snp_rsID as variantId,
-        GRCh38_pos as variantPosition,
+        ld_snp_rsID as vId,
+        GRCh38_pos as vPos,
         gwas_snp as lvId,
         GRCh38_gwas_snp_pos as lvPos,
         r2
