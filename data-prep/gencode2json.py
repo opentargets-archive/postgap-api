@@ -1,6 +1,5 @@
-from pathlib import Path
+#!/usr/bin/env python3
 import pandas as pd
-
 from sqlalchemy import create_engine
 
 engine = create_engine('mysql+mysqldb://anonymous@ensembldb.ensembl.org/homo_sapiens_core_92_38')
