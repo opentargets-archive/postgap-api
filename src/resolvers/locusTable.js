@@ -1,6 +1,6 @@
 const resolveLocusTable = (_, { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType, offset, limit }, { db }) => {
-    const params = {$chromosome: chromosome, $start: start, $end: end, $offset: offset, $limit: limit};
-    const paramsWithoutPagination = { $chromosome: chromosome, $start: start, $end: end };
+    const params = {$start: start, $end: end, $offset: offset, $limit: limit};
+    const paramsWithoutPagination = { $start: start, $end: end };
     let filtersSql = g2VMustHaves.length > 0 ? (g2VMustHaves.map(d => `AND (${d.toLowerCase()} > 0)`).join(' ')) : '';
     if (g2VScore && g2VScore.length === 2) {
         filtersSql += ` AND (ot_g2v_score >= ${g2VScore[0]}) AND (ot_g2v_score <= ${g2VScore[1]})`;
@@ -51,12 +51,14 @@ const resolveLocusTable = (_, { chromosome, start, end, g2VMustHaves, g2VScore, 
         ${filtersSql}
         ${selectedSql}
         AND (
-            (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_start>=$start AND GRCh38_gene_start<=$end)
-            OR (GRCh38_gene_chrom=$chromosome AND GRCh38_gene_end>=$start AND GRCh38_gene_end<=$end)
-            OR (GRCh38_chrom=$chromosome AND GRCh38_pos>=$start AND GRCh38_pos<=$end)
-            OR (GRCh38_gwas_snp_chrom=$chromosome AND GRCh38_gwas_snp_pos>=$start AND GRCh38_gwas_snp_pos<=$end))
+            (GRCh38_gene_start>=$start AND GRCh38_gene_start<=$end)
+            OR (GRCh38_gene_end>=$start AND GRCh38_gene_end<=$end)
+            OR (GRCh38_pos>=$start AND GRCh38_pos<=$end)
+            OR (GRCh38_gwas_snp_pos>=$start AND GRCh38_gwas_snp_pos<=$end))
     `;
     const filteredWhere = templateWhere(filtersSql, selectedSql);
+
+    const tableName = `chr_${chromosome}`;
 
     // rows
     const rowsSql = `
@@ -86,19 +88,21 @@ const resolveLocusTable = (_, { chromosome, start, end, g2VMustHaves, g2VScore, 
         gwas_size as gwasSize,
         gwas_pmid as gwasPMId,
         gwas_study as gwasStudy
-    FROM processed
+    FROM ${tableName}
     ${filteredWhere}
     LIMIT $limit
     OFFSET $offset
     `;
+    console.log(rowsSql)
     const rowsQuery = db.all(rowsSql, params);
 
     // total rows
     const totalRowsSql = `
-    SELECT COUNT(*) as total
-    FROM processed
+    SELECT COUNT(*) AS total
+    FROM ${tableName}
     ${filteredWhere}
     `;
+    console.log(totalRowsSql)
     const totalRowsQuery = db.get(totalRowsSql, paramsWithoutPagination);
 
     // wait for all queries and return composite object
