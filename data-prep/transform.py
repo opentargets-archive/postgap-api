@@ -128,7 +128,7 @@ def open_targets_transform(filename,nrows):
 
     # write out
 
-    pg.to_csv('{}.transformed'.format(Path(filename).stem), sep='\t', compression='gzip')
+    pg.to_csv('{}.transformed.gz'.format(Path(filename).stem), sep='\t', compression='gzip')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
