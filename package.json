@@ -6,7 +6,7 @@
   "author": "peatroot <garethpeat@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon ./src/index.js --exec babel-node -e js",
+    "start": "nodemon --max-old-space-size=4096 ./src/index.js --exec babel-node -e js",
     "build": "babel src -d dist && cp src/schema.gql dist/schema.gql",
     "serve": "node dist/index.js"
   },
@@ -19,7 +19,9 @@
     "express": "^4.16.3",
     "express-graphql": "^0.6.12",
     "graphql": "^0.13.2",
+    "graphql-add-middleware": "^0.1.5",
     "graphql-tools": "^2.23.1",
+    "response-time": "^2.3.2",
     "sqlite3": "^4.0.0"
   },
   "devDependencies": {

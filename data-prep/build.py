@@ -11,6 +11,8 @@ __dataprepdir__ = os.path.dirname(os.path.abspath(__file__))
 outfilename = os.path.join(__dataprepdir__, 'genes.json')
 outdbname = 'postgap.20180324.db'
 
+VALID_CHROMOSOMES = [*[str(chr) for chr in range(1, 23)], 'X', 'Y']
+
 
 def build_db(filename):
     '''
@@ -23,14 +25,14 @@ def build_db(filename):
     conn = sqlite3.connect(outdbname)
     cursor = conn.cursor()
 
-    # build raw table
-    build_raw(cursor, conn, filename)
-    conn.commit()
-    print('--- Built raw table from postgap pipeline results. ---')
+    # # build raw table
+    # build_raw(cursor, conn, filename)
+    # conn.commit()
+    # print('--- Built raw table from postgap pipeline results. ---')
 
-    # build genes table
-    build_ensembl_genes(cursor, conn)
-    conn.commit()
+    # # build genes table
+    # build_ensembl_genes(cursor, conn)
+    # conn.commit()
 
     # build lead variants table
     build_ensembl_lead_variants(cursor, conn)
@@ -38,6 +40,10 @@ def build_db(filename):
 
     # build processed (merging previous three tables)
     build_processed(cursor, conn)
+    conn.commit()
+
+    # build chromosome tables (performance of locus queries)
+    build_chroms(cursor, conn)
     conn.commit()
 
     # close the connection now we are done with it
@@ -128,10 +134,10 @@ def build_ensembl_lead_variants(cursor, conn):
     # retrieve all the unique lead variant ids from the raw table
     lead_variant_ids = [row[0] for row
                         in cursor.execute('SELECT DISTINCT gwas_snp FROM raw;')]
-
+    print("--- Querying Ensembl Variation MySQL for %s SNPs---" % len(lead_variant_ids))
     #connect to Ensembl MySQL public server
     variation = create_engine('mysql+mysqldb://anonymous@ensembldb.ensembl.org/homo_sapiens_variation_92_38')
-
+    start_time = time.time()
 
     q1 = '''
     select
@@ -143,14 +149,14 @@ def build_ensembl_lead_variants(cursor, conn):
     v.name in ('{0}')
     and v.variation_id = vf.variation_id
     and vf.seq_region_id = r.seq_region_id
-    limit 10
     '''.format("','".join(lead_variant_ids))
     lead_variants = pd.read_sql_query(q1, variation)
 
-    # create table
+    print("--- Variant table completed in %s seconds ---" % (time.time() - start_time))
+    print("--- Committing Variant table to SQL ---")
     lead_variants.to_sql('lead_variant', conn)
 
-    # add indices
+    print("--- Adding indices for Variant table ---")
     cursor.executescript('''
     CREATE INDEX ix_lead_variants_lead_variant_id ON lead_variant (gwas_snp);
     ''')
@@ -182,6 +188,32 @@ def build_processed(cursor, conn):
     CREATE INDEX ix_gene_end ON processed (GRCh38_gene_chrom, GRCh38_gene_end);
     CREATE INDEX ix_gwas_snp_location ON processed (GRCh38_gwas_snp_chrom, GRCh38_gwas_snp_pos);
     ''')
+
+def build_chroms(cursor, conn):
+    for chr in VALID_CHROMOSOMES:
+        # setup
+        table_name = 'chr_{}'.format(chr)
+        create_sql = '''
+        CREATE TABLE {table_name} AS
+            SELECT *
+            FROM processed
+            WHERE
+                GRCh38_gene_chrom="{chr}"
+                OR GRCh38_chrom="{chr}"
+                OR GRCh38_gwas_snp_chrom="{chr}";
+        '''.format(chr=chr, table_name=table_name)
+        indices_sql = '''
+        CREATE INDEX ix{chr}_gene_start ON {table_name} (GRCh38_gene_start);
+        CREATE INDEX ix{chr}_gene_end ON {table_name} (GRCh38_gene_end);
+        CREATE INDEX ix{chr}_ld_snp_location ON {table_name} (GRCh38_pos);
+        CREATE INDEX ix{chr}_gwas_snp_location ON {table_name} (GRCh38_gwas_snp_pos);
+        '''.format(chr=chr, table_name=table_name)
+
+        # create new table with gene and lead variant location information
+        cursor.executescript(create_sql)
+
+        # create indices
+        cursor.executescript(indices_sql)
 
 
 if __name__ == '__main__':

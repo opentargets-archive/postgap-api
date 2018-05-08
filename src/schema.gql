@@ -12,18 +12,19 @@ type Gene {
     start: Int
     end: Int
     forwardStrand: Boolean
-    canonicalTranscript: CanonicalTranscript
+    # canonicalTranscript: CanonicalTranscript
+    exons: [[Int]]
     selected: Boolean
 }
 type Variant {
     id: String
-    chromosome: String
+    # chromosome: String
     position: Int
     selected: Boolean
 }
 type LeadVariant {
     id: String
-    chromosome: String
+    # chromosome: String
     position: Int
     selected: Boolean
 }
@@ -36,12 +37,12 @@ type GeneVariant {
     id: String
     geneId: String
     geneSymbol: String
-    geneChromosome: String
+    # geneChromosome: String
     geneTss: Int
-    canonicalTranscript: CanonicalTranscript
-    variantId: String
-    variantChromosome: String
-    variantPosition: Int
+    # canonicalTranscript: CanonicalTranscript
+    vId: String
+    # variantChromosome: String
+    vPos: Int
     otG2VScore: Float
     vep: Float
     gtex: Float
@@ -53,20 +54,20 @@ type GeneVariant {
 }
 type VariantLeadVariant {
     id: String
-    variantId: String
-    variantChromosome: String
-    variantPosition: Int
-    leadVariantId: String
-    leadVariantChromosome: String
-    leadVariantPosition: Int
+    vId: String
+    # variantChromosome: String
+    vPos: Int
+    lvId: String
+    # leadVariantChromosome: String
+    lvPos: Int
     r2: Float
     selected: Boolean
 }
 type LeadVariantDisease {
     id: String
-    leadVariantId: String
-    leadVariantChromosome: String
-    leadVariantPosition: Int
+    lvId: String
+    # leadVariantChromosome: String
+    lvPos: Int
     efoId: String
     efoName: String
     gwasPValue: Float
@@ -82,15 +83,10 @@ type CanonicalTranscript {
     start: Int
     end: Int
     forwardStrand: Boolean
-    exons: [Exon]
+    exons: [[Int]]
     tss: Int
     translationStart: Int
     translationEnd: Int
-}
-type Exon {
-    id: String
-    start: Int
-    end: Int
 }
 type DrawableLocus {
     genes: [Gene]
@@ -120,10 +116,10 @@ type FullTableRow {
     geneSymbol: String
     geneChromosome: String
     geneTss: Int
-    variantId: String
+    vId: String
     variantChromosome: String
-    variantPosition: Int
-    leadVariantId: String
+    vPos: Int
+    lvId: String
     efoId: String
     efoName: String
     otG2VScore: Float
