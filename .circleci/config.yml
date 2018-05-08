@@ -7,55 +7,54 @@ jobs:
       GCR_REPO: eu.gcr.io/open-targets-eu-dev/postgap-api
     steps:
       - checkout
-      - run:
-          name: Install and pull from git-lfs
-          command: |
-            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
       # install python deps (and cache)
+      - run: sudo chown -R circleci:circleci /usr/local/bin
+      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
       - restore_cache:
-          key: deps-venv-{{ .Branch }}-{{ checksum "data-prep/requirements.txt" }}
+          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
       - run:
-          name: Create virtual environment
           command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r data-prep/requirements.txt
+            sudo pip install pipenv
+            pipenv install
       - save_cache:
-          key: deps-venv-{{ .Branch }}-{{ checksum "data-prep/requirements.txt" }}
+          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
           paths:
-            - "venv"
-      - run:
-          name: Update .bashrc to run further commands within venv
-          command: echo "source venv/bin/activate" >> $BASH_ENV
+            - ".venv"
+            - "/usr/local/bin"
+            - "/usr/local/lib/python3.6/site-packages"
+      - restore_cache:
+          key: deps-venv-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+
+
       # transform raw postgap file (and cache)
       # this applies several filters and creates the OT G2V score
-      - restore_cache:
-          key: asset-transformed-{{ .Branch }}-{{ checksum "data-prep/transform.py" }}
-      - run:
-          name: Transform raw POSTGAP output to Open Targets format
-          command: |
-            if [ ! -f postgap.20180324.txt.gz.transformed ]; then
-              python3 data-prep/transform.py data-prep/postgap.20180324.txt.gz
-            fi
-      - save_cache:
-          key: asset-transformed-{{ .Branch }}-{{ checksum "data-prep/transform.py" }}
-          paths:
-            - "postgap.20180324.txt.gz.transformed"
-      # build the sqlite db (and cache)
-      # this calls the Ensembl API to get the gene and lead variant location info
-      # and therefore will likely take some time (hours)
-      - restore_cache:
-          key: asset-sqlite-{{ .Branch }}-{{ checksum "data-prep/build.py" }}
-      - run:
-          name: Transform raw POSTGAP output to Open Targets format
-          command: |
-            if [ ! -f postgap.20180324.db ]; then
-              python3 data-prep/transform.py data-prep/postgap.20180324.txt.gz
-            fi
-      - save_cache:
-          key: asset-sqlite-{{ .Branch }}-{{ checksum "data-prep/build.py" }}
-          paths:
-            - "postgap.20180324.db"
+      # - restore_cache:
+      #     key: asset-transformed-{{ .Branch }}-{{ checksum "data-prep/transform.py" }}
+      # - run:
+      #     name: Transform raw POSTGAP output to Open Targets format
+      #     command: |
+      #       if [ ! -f postgap.20180324.txt.gz.transformed ]; then
+      #         python3 data-prep/transform.py data-prep/postgap.20180324.txt.gz
+      #       fi
+      # - save_cache:
+      #     key: asset-transformed-{{ .Branch }}-{{ checksum "data-prep/transform.py" }}
+      #     paths:
+      #       - "postgap.20180324.txt.gz.transformed"
+      # # build the sqlite db (and cache)
+      # # this calls the Ensembl API to get the gene and lead variant location info
+      # # and therefore will likely take some time (hours)
+      # - restore_cache:
+      #     key: asset-sqlite-{{ .Branch }}-{{ checksum "data-prep/build.py" }}
+      # - run:
+      #     name: Transform raw POSTGAP output to Open Targets format
+      #     command: |
+      #       if [ ! -f postgap.20180324.db ]; then
+      #         python3 data-prep/transform.py data-prep/postgap.20180324.txt.gz
+      #       fi
+      # - save_cache:
+      #     key: asset-sqlite-{{ .Branch }}-{{ checksum "data-prep/build.py" }}
+      #     paths:
+      #       - "postgap.20180324.db"
       # build docker container
       - setup_remote_docker
       - run:
