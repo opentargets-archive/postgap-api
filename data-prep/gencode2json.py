@@ -39,6 +39,7 @@ df['tss'] = df.apply(lambda row: row['start'] if row['fwdstrand'] else row['end'
 flatdf = pd.DataFrame(df.groupby(['id','description','tss','chr','start','end','fwdstrand'])['exons'].apply(list)).reset_index()
 flatdf.set_index('id', inplace=True)
 print(flatdf['chr'].value_counts())
+print(json.dumps(flatdf.head(1), indent=4))
 flatdf.to_json(outfilename,orient='index')
 
 print("--- %s seconds ---" % (time.time() - start_time))
