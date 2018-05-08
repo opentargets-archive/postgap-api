@@ -21,20 +21,20 @@ pip3 install --user pipenv #or `brew install pipenv` or `apt install pipenv`
 pipenv install
 ```
 
-Transform the data to meet the Open Targets requirements (outputs `<input_file>.transformed`):
+Transform the data to meet the Open Targets requirements (outputs `<input_file>.transformed.gz`):
 ```
 pipenv run python data-prep/transform.py --sample
 ```
 Note: the command above will download a 1GB file and might take a while to execute.
 If you want to run it on a local file, use instead:
 ```sh
-pipenv run python data-prep/transform.py -f <yourpostgap.file.txt> --sample
+pipenv run python data-prep/transform.py -f <yourpostgap.file.txt>
 ```
 
 
-Build the `sqlite3` database (outputs `postgap.db`):
+Build the `sqlite3` database (outputs `postgap.<dateversion>.db`):
 ```
-python3 ./data-prep/build.py /data-prep/postgap.20180324.txt.transformed
+pipenv run python data-prep/build.py /data-prep/postgap.20180324.txt.transformed.gz
 ```
 
 ### GraphQL server

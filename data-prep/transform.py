@@ -3,7 +3,10 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
+import numpy as np
 from pathlib import Path
+
+__dataprepdir__ = os.path.dirname(os.path.abspath(__file__))
 
 
 VALID_CHROMOSOMES = [*[str(chr) for chr in range(23)], 'X', 'Y']
@@ -94,8 +97,19 @@ def open_targets_transform(filename,nrows):
     Open Targets format requirements.
     '''
     # load
+    castings = {
+        'ld_snp_rsID': str,
+        'chrom':str,
+        'GRCh38_chrom':str,
+        'GRCh38_gene_chrom':str,
+        'gene_id': str,
+        'gene_symbol': str,
+        'gwas_pvalue': np.float64,
+        'ls_snp_is_gwas_snp': bool,
+        'gene_id':str
+        }
     pg = pd.read_csv(filename, sep='\t', na_values=['None'],nrows=nrows,
-                     dtype={'GRCh38_chrom':str,'GRCh38_gene_chrom':str})
+                     dtype=castings)
     print('Input file read')
     print('{} rows (input file)'.format(pg.shape[0]))
 
@@ -139,4 +153,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.sample:
         print('Running analysis on the first {} lines'.format(args.sample))
+    print('Using file %s' % args.filename)
     open_targets_transform(args.filename, nrows=args.sample)

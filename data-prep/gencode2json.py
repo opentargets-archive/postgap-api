@@ -1,3 +1,7 @@
+''' standalone script to create a genes table.
+The same code is used in build.py
+'''
+
 #!/usr/bin/env python3
 import os
 import time

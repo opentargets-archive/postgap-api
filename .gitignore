@@ -1,9 +1,10 @@
 *.db
-*.transformed
 data-prep/venv
 tmp/
 certs/
 *.transformed
+*.transformed.gz
+*.txt.gz
 data-releases
 
 
