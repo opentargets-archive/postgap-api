@@ -93,7 +93,6 @@ const resolveLocusTable = (_, { chromosome, start, end, g2VMustHaves, g2VScore, 
     LIMIT $limit
     OFFSET $offset
     `;
-    console.log(rowsSql)
     const rowsQuery = db.all(rowsSql, params);
 
     // total rows
@@ -102,7 +101,6 @@ const resolveLocusTable = (_, { chromosome, start, end, g2VMustHaves, g2VScore, 
     FROM ${tableName}
     ${filteredWhere}
     `;
-    console.log(totalRowsSql)
     const totalRowsQuery = db.get(totalRowsSql, paramsWithoutPagination);
 
     // wait for all queries and return composite object
