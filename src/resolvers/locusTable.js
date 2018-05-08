@@ -32,8 +32,8 @@ const resolveLocusTable = (_, { chromosome, start, end, g2VMustHaves, g2VScore, 
             selectedSql = `AND (gene_id = "${geneId}" AND ld_snp_rsID = "${variantId}")`;
             break;
         case 'variantLeadVariant':
-            const [varId, leadVariantId] = selectedId.split('-');
-            selectedSql = `AND (ld_snp_rsID = "${varId}" AND gwas_snp = "${leadVariantId}")`;
+            const [varId, lvId] = selectedId.split('-');
+            selectedSql = `AND (ld_snp_rsID = "${varId}" AND gwas_snp = "${lvId}")`;
             break;
         case 'leadVariantDisease':
             const [leadVarId, diseaseId] = selectedId.split('-');
@@ -69,7 +69,7 @@ const resolveLocusTable = (_, { chromosome, start, end, g2VMustHaves, g2VScore, 
         ld_snp_rsID as variantId,
         GRCH38_chrom as variantChromosome,
         GRCh38_pos as variantPosition,
-        gwas_snp as leadVariantId,
+        gwas_snp as lvId,
         disease_efo_id as efoId,
         disease_name as efoName,
         ot_g2v_score as otG2VScore,

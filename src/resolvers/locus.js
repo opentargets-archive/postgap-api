@@ -52,8 +52,8 @@ const getSelectedSql = ({ selectedId, selectedType }) => {
             selectedSql = `COUNT(CASE ((gene_id = "${geneId}") AND (ld_snp_rsID = "${variantId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
             break;
         case 'variantLeadVariant':
-            const [varId, leadVariantId] = selectedId.split('-');
-            selectedSql = `COUNT(CASE ((ld_snp_rsID = "${varId}") AND (gwas_snp = "${leadVariantId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
+            const [varId, lvId] = selectedId.split('-');
+            selectedSql = `COUNT(CASE ((ld_snp_rsID = "${varId}") AND (gwas_snp = "${lvId}")) WHEN 1 THEN 1 ELSE null END) > 0 AS selected,`;
             break;
         case 'leadVariantDisease':
             const [leadVarId, diseaseId] = selectedId.split('-');
@@ -225,8 +225,8 @@ const resolveVariantLeadVariants = ({ common }, args, { db }) => {
         (ld_snp_rsID || "-" || gwas_snp) AS id,
         ld_snp_rsID as variantId,
         GRCh38_pos as variantPosition,
-        gwas_snp as leadVariantId,
-        GRCh38_gwas_snp_pos as leadVariantPosition,
+        gwas_snp as lvId,
+        GRCh38_gwas_snp_pos as lvPos,
         r2
     FROM ${tableName}
     ${filteredWhere}
@@ -244,8 +244,8 @@ const resolveLeadVariantDiseases = ({ common }, args, { db }) => {
     SELECT
         ${selectedSql}
         (gwas_snp || "-" || disease_efo_id) AS id,
-        gwas_snp as leadVariantId,
-        GRCh38_gwas_snp_pos as leadVariantPosition,
+        gwas_snp as lvId,
+        GRCh38_gwas_snp_pos as lvPos,
         disease_efo_id as efoId,
         disease_name as efoName,
         gwas_pvalue as gwasPValue,

@@ -12,7 +12,7 @@ const resolverDiseaseTable = (_, { efoId, offset, limit }, { db }) => {
         ld_snp_rsID as variantId,
         GRCH38_chrom as variantChromosome,
         GRCh38_pos as variantPosition,
-        gwas_snp as leadVariantId,
+        gwas_snp as lvId,
         disease_efo_id as efoId,
         disease_name as efoName,
         ot_g2v_score as otG2VScore,
