@@ -20,19 +20,17 @@ def build_db(filename):
     Open Targets format requirements.
     '''
     # creates db if db does not exist
-    # conn = sqlite3.connect('postgap.db.scored')
-    # conn = sqlite3.connect('postgap.20180324.v0.0.1.db')
     conn = sqlite3.connect(outdbname)
     cursor = conn.cursor()
 
-    # # build raw table
-    # build_raw(cursor, conn, filename)
-    # conn.commit()
-    # print('--- Built raw table from postgap pipeline results. ---')
+    # build raw table
+    build_raw(cursor, conn, filename)
+    conn.commit()
+    print('--- Built raw table from postgap pipeline results. ---')
 
-    # # build genes table
-    # build_ensembl_genes(cursor, conn)
-    # conn.commit()
+    # build genes table
+    build_ensembl_genes(cursor, conn)
+    conn.commit()
 
     # build lead variants table
     build_ensembl_lead_variants(cursor, conn)
@@ -66,7 +64,7 @@ def build_raw(cursor, conn, filename):
     df = pd.read_csv(filename, compression='gzip', sep='\t', na_values=['None'],
                      dtype=castings)
     print('--- Read file %s. Dumping to SQL... ---' % filename)
-    df.to_sql('raw', conn)
+    df.to_sql('raw', conn, if_exists = 'replace')
 
     print('--- Adding indices on gene and SNP ---')
     cursor.executescript('''
@@ -123,12 +121,16 @@ def build_ensembl_genes(cursor, conn):
     genes.to_json(os.path.join(__dataprepdir__, 'genes.json'),orient='index')
 
     print("--- Genes table completed in %s seconds ---" % (time.time() - start_time))
-    genes.loc[:,('start','end')].to_sql('gene', conn)
+    genes.loc[:,('start','end')].to_sql('gene', conn, if_exists='replace')
 
     # add indices
-    cursor.execute('''
-    CREATE INDEX ix_gene_gene_id ON gene (gene_id);
-    ''')
+    try:
+        cursor.execute('''
+        CREATE INDEX ix_gene_gene_id ON gene (gene_id);
+        ''')
+    except sqlite3.OperationalError as operror:
+        print(operror)
+        pass
 
 def build_ensembl_lead_variants(cursor, conn):
     # retrieve all the unique lead variant ids from the raw table
@@ -154,7 +156,7 @@ def build_ensembl_lead_variants(cursor, conn):
 
     print("--- Variant table completed in %s seconds ---" % (time.time() - start_time))
     print("--- Committing Variant table to SQL ---")
-    lead_variants.to_sql('lead_variant', conn)
+    lead_variants.to_sql('lead_variant', conn, if_exists='replace')
 
     print("--- Adding indices for Variant table ---")
     cursor.executescript('''

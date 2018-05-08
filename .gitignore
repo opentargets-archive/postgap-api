@@ -5,6 +5,7 @@ certs/
 *.transformed
 *.transformed.gz
 *.txt.gz
+*.db-journal
 data-releases
 
 
