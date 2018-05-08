@@ -2,6 +2,17 @@
 This is currently an experimental application to build a GraphQL API to serve POSTGAP data specifically for the POSTGAP web application. The main motivations are to improve performance and to enable more flexible queries.
 
 ## Development
+
+### cloudbuilder
+
+To use the google cloud builder...
+```sh
+gcloud auth login
+gcloud config set project open-targets-eu-dev
+gcloud container builds submit --config cloudbuild.yaml .
+```
+
+
 ### Build db step
 
 Setup python requirements using [pipenv](https://docs.pipenv.org/):
