@@ -166,7 +166,7 @@ def build_ensembl_lead_variants(cursor, conn):
 
 
 def build_processed(cursor, conn):
-    # create new table with gene and lead variant location information
+    print("--- create new table with gene and lead variant location information ---")
     cursor.executescript('''
     CREATE TABLE processed AS
         SELECT
@@ -180,6 +180,7 @@ def build_processed(cursor, conn):
         LEFT JOIN lead_variant ON lead_variant.gwas_snp = raw.gwas_snp;
     ''')
 
+    print("--- create indices on processed table ---")
     cursor.executescript('''
     CREATE INDEX ix_gene_id ON processed (gene_id);
     CREATE INDEX ix_ld_snp_rsID ON processed (ld_snp_rsID);
@@ -195,6 +196,7 @@ def build_chroms(cursor, conn):
     for chr in VALID_CHROMOSOMES:
         # setup
         table_name = 'chr_{}'.format(chr)
+        print("--- creating table for chrom %s ---" % table_name)
         create_sql = '''
         CREATE TABLE {table_name} AS
             SELECT *
