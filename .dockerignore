@@ -1,4 +1,7 @@
 node_modules
 data-prep
+data-releases
+data-analysis
+tmp
 .git
 .gitignore

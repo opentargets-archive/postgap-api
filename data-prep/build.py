@@ -25,6 +25,7 @@ LEAD_VARIANT_TABLE_COLS = [
     'position',
     'strand',
 ]
+VALID_CHROMOSOMES = [*[str(chr) for chr in range(1, 23)], 'X', 'Y']
 
 def build_db(filename):
     '''
@@ -51,6 +52,10 @@ def build_db(filename):
 
     # build processed (merging previous three tables)
     build_processed(cursor, conn)
+    conn.commit()
+
+    # build chromosome tables (performance of locus queries)
+    build_chroms(cursor, conn)
     conn.commit()
 
     # close the connection now we are done with it
@@ -239,6 +244,32 @@ def build_processed(cursor, conn):
     CREATE INDEX ix_gene_end ON processed (GRCh38_gene_chrom, GRCh38_gene_end);
     CREATE INDEX ix_gwas_snp_location ON processed (GRCh38_gwas_snp_chrom, GRCh38_gwas_snp_pos);
     ''')
+
+def build_chroms(cursor, conn):
+    for chr in VALID_CHROMOSOMES:
+        # setup
+        table_name = 'chr_{}'.format(chr)
+        create_sql = '''
+        CREATE TABLE {table_name} AS
+            SELECT *
+            FROM processed
+            WHERE
+                GRCh38_gene_chrom="{chr}"
+                OR GRCh38_chrom="{chr}"
+                OR GRCh38_gwas_snp_chrom="{chr}";
+        '''.format(chr=chr, table_name=table_name)
+        indices_sql = '''
+        CREATE INDEX ix{chr}_gene_start ON {table_name} (GRCh38_gene_start);
+        CREATE INDEX ix{chr}_gene_end ON {table_name} (GRCh38_gene_end);
+        CREATE INDEX ix{chr}_ld_snp_location ON {table_name} (GRCh38_pos);
+        CREATE INDEX ix{chr}_gwas_snp_location ON {table_name} (GRCh38_gwas_snp_pos);
+        '''.format(chr=chr, table_name=table_name)
+
+        # create new table with gene and lead variant location information
+        cursor.executescript(create_sql)
+
+        # create indices
+        cursor.executescript(indices_sql)
 
 
 if __name__ == '__main__':
