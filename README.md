@@ -2,19 +2,39 @@
 This is currently an experimental application to build a GraphQL API to serve POSTGAP data specifically for the POSTGAP web application. The main motivations are to improve performance and to enable more flexible queries.
 
 ## Development
+
+### Build container with google cloudbuilder
+
+To use the google cloud builder...
+```sh
+gcloud auth login
+gcloud config set project open-targets-eu-dev
+gcloud container builds submit --config cloudbuild.yaml .
+```
+
+
 ### Build db step
-Assumption: You have downloaded the latest POSTGAP output file (eg `postgap.20180324.txt.gz`) to the root of a clone of this repo.
 
-TODO: Setup requirements.txt and add instructions here
-
-Transform the data to meet the Open Targets requirements (outputs `<input_file>.transformed`):
-```
-python3 ./data-prep/transform.py postgap.20180324.txt.gz
+Setup python requirements using [pipenv](https://docs.pipenv.org/):
+```sh
+pip3 install --user pipenv #or `brew install pipenv` or `apt install pipenv`
+pipenv install
 ```
 
-Build the `sqlite3` database (outputs `postgap.db`):
+Transform the data to meet the Open Targets requirements (outputs `<input_file>.transformed.gz`):
 ```
-python3 ./data-prep/build.py postgap.20180324.txt.gz.transformed
+pipenv run python data-prep/transform.py --sample
+```
+Note: the command above will download a 1GB file and might take a while to execute.
+If you want to run it on a local file, use instead:
+```sh
+pipenv run python data-prep/transform.py -f <yourpostgap.file.txt>
+```
+
+
+Build the `sqlite3` database (outputs `postgap.<dateversion>.db`):
+```
+pipenv run python data-prep/build.py /data-prep/postgap.20180324.txt.transformed.gz
 ```
 
 ### GraphQL server

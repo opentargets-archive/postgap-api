@@ -1,7 +1,12 @@
 import os
 import sys
+import argparse
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
+__dataprepdir__ = os.path.dirname(os.path.abspath(__file__))
+
 
 VALID_CHROMOSOMES = [*[str(chr) for chr in range(23)], 'X', 'Y']
 VALID_GWAS_SOURCES = ['GWAS Catalog']
@@ -164,7 +169,7 @@ def calculate_open_targets_scores(pg):
     eco_scores_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'eco_scores.tsv')
     eco_scores_df = pd.read_csv(eco_scores_filename, sep='\t', na_values=['None'])
     eco_scores = pd.Series(eco_scores_df['value'].values, index=eco_scores_df['term']).to_dict()
-    
+
     # calculate the vep col
     pg['ot_vep'] = pg.apply(
         lambda row: calculate_open_targets_score(
@@ -198,16 +203,29 @@ def calculate_open_targets_scores(pg):
 
     return pg
 
-def open_targets_transform(filename):
+
+def open_targets_transform(filename,nrows):
     '''
     Iterate the rows in the tsv file and output a new tsv that meets the
     Open Targets format requirements.
     '''
     # load
-    pg = pd.read_csv(filename, sep='\t', na_values=['None'])
+    castings = {
+        'ld_snp_rsID': str,
+        'chrom':str,
+        'GRCh38_chrom':str,
+        'GRCh38_gene_chrom':str,
+        'gene_symbol': str,
+        'gwas_pvalue': np.float64,
+        'ls_snp_is_gwas_snp': bool,
+        'gene_id':str
+        }
+    pg = pd.read_csv(filename, sep='\t', na_values=['None'],nrows=nrows,
+                     dtype=castings)
+    print('Input file read')
     print('{} rows (input file)'.format(pg.shape[0]))
-    
-    # filter for gwas source 
+
+    # filter for gwas source
     pg = pg[pg['gwas_source'].isin(VALID_GWAS_SOURCES)]
     print('{} rows (after filtering gwas_source)'.format(pg.shape[0]))
 
@@ -229,7 +247,7 @@ def open_targets_transform(filename):
     any_other_score = (pg['VEP'] > 0) | (pg['PCHiC'] > 0) | (pg['Fantom5'] > 0) | (pg['DHS'] > 0) | (pg['Nearest'] > 0)
     pg = pg[valid_gtex | any_other_score]
     print('{} rows (after filtering for valid gtex)'.format(pg.shape[0]))
-    
+
     # calculate the open targets g2v score
     pg = calculate_open_targets_scores(pg)
     print('{} rows (after calculating/filtering for valid g2v score)'.format(pg.shape[0]))
@@ -238,8 +256,17 @@ def open_targets_transform(filename):
     pg = pg[FILTERED_TABLE_COLS]
 
     # write out
-    pg.to_csv('{}.transformed'.format(filename), sep='\t', compression='gzip')
+
+    pg.to_csv('{}.transformed.gz'.format(Path(filename).stem), sep='\t', compression='gzip')
 
 if __name__ == '__main__':
-    filename = sys.argv[1]
-    open_targets_transform(filename)
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-filename', default='https://storage.googleapis.com/postgap-data/postgap.20180324.txt.gz')
+    parser.add_argument('--sample', action='store_const', const=5000,
+                        help='run on a small subsample')
+
+    args = parser.parse_args()
+    if args.sample:
+        print('Running analysis on the first {} lines'.format(args.sample))
+    print('Using file %s' % args.filename)
+    open_targets_transform(args.filename, nrows=args.sample)

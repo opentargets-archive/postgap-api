@@ -31,6 +31,11 @@ let db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE, err => {
         db.run(`ATTACH DATABASE "${DB_FILENAME}" AS filedb`)
         .then(() => console.log('Attached file db.'))
         .then(() => {
+            initGeneLocationCache();
+            console.log('Loaded genes position in cache.');
+            console.log(geneLocationsCache['ENSG00000169194']);
+        })
+        .then(() => {
             return db.all('SELECT type,name,sql FROM filedb.sqlite_master;').then(data => {
                 const buildSql = data.map(d => d.sql).join(';');
                 const tables = data.filter(d => d.type === 'table')
@@ -51,9 +56,7 @@ let db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE, err => {
             return db.run(`DETACH DATABASE filedb`);
         })
         .then(() => console.log('Detached file db.'))
-        .then(() => {
-            initGeneLocationCache(db);
-        });
+        ;
     }
 });
 
@@ -72,38 +75,10 @@ db.on('profile', (sql, ms) => {
 // total number of genes is ~20,000,
 // so cache ensembl calls on an object
 let geneLocationsCache = {};
-function initGeneLocationCache(db) {
-    const geneLocationsSql = `
-    -- SQL_QUERY_TYPE=loadGeneLocations
-    SELECT DISTINCT
-        gene_id as geneId,
-        description,
-        strand,
-        canonical_transcript as canonicalTranscript
-    FROM gene
-    `;
-    db.all(geneLocationsSql).then(genes => {
-        // create a lookup cache
-        genes.forEach(d => {
-            let canonicalTranscript = JSON.parse(d.canonicalTranscript);
-            const exons = canonicalTranscript.exons.map(exon => ([exon.start, exon.end]));
-            canonicalTranscript = {
-                ...canonicalTranscript,
-                exons: canonicalTranscript.exons.map(exon => ([exon.start, exon.end]))
-            };
-            geneLocationsCache[d.geneId] = {
-                geneId: d.geneId,
-                description: d.description,
-                forwardStrand: (d.strand === 1),
-                // canonicalTranscript
-                start: canonicalTranscript.start,
-                end: canonicalTranscript.end,
-                tss: canonicalTranscript.tss,
-                exons
-            }
-        });
-    });
+function initGeneLocationCache() {
+    geneLocationsCache = JSON.parse(fs.readFileSync('genes.json','utf8'));
 }
+
 
 // load the schema
 const schemaFile = path.join(__dirname, 'schema.gql');
@@ -138,6 +113,8 @@ const context = {
 const app = express();
 app.use('/graphql', responseTime(), cors(corsOptions), bodyParser.json(), graphqlExpress({ schema, context }))
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
+app.get('/', (req, res) => res.send('All is well at the root!'))
+
 
 // start
 const server = app.listen(4000, () => {

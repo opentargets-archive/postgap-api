@@ -69,10 +69,10 @@ const commonSetup = (args) => {
     const { chromosome, start, end, g2VMustHaves, g2VScore, r2, gwasPValue, selectedId, selectedType } = args;
     const params = { $start: start, $end: end };
     const tableName = `chr_${chromosome}`;
-    
+
     const filteredWhere = getFilteredLocusWhereSql(args);
     const unfilteredWhere = getUnfilteredLocusWhereSql();
-    
+
     let selectedSql = getSelectedSql(args);
     const orderBySql = selectedSql ? 'ORDER BY selected' : '';
     return {
@@ -108,7 +108,7 @@ const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
             const geneLocation = geneLocationsCache[d.id];
             return {
                 ...d,
-                forwardStrand: geneLocation.forwardStrand,
+                forwardStrand: geneLocation.fwdstrand,
                 // canonicalTranscript: geneLocation.canonicalTranscript
                 tss: geneLocation.tss,
                 start: geneLocation.start,
