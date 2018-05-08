@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
+import os
+import time
 import pandas as pd
 from sqlalchemy import create_engine
 
 engine = create_engine('mysql+mysqldb://anonymous@ensembldb.ensembl.org/homo_sapiens_core_92_38')
 
+outfilename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'genes.json')
 
 q = """
 select
@@ -22,9 +25,12 @@ where
 g.canonical_transcript_id = et.transcript_id and
 g.seq_region_id = r.seq_region_id and
 r.coord_system_id = 4 and
+r.name NOT RLIKE 'CHR' and
 et.transcript_id = t.transcript_id and
 e.exon_id =et.exon_id
 """
+
+start_time = time.time()
 
 df = pd.read_sql_query(q, engine,index_col='exon_id')
 df['exons'] = list(zip(df.exon_start, df.exon_end))
@@ -33,7 +39,6 @@ df['tss'] = df.apply(lambda row: row['start'] if row['fwdstrand'] else row['end'
 flatdf = pd.DataFrame(df.groupby(['id','description','tss','chr','start','end','fwdstrand'])['exons'].apply(list)).reset_index()
 flatdf.set_index('id', inplace=True)
 print(flatdf['chr'].value_counts())
-flatdf.to_json('genes.json',orient='index')
-# print(df.groupby(['stable_id','description','strand'])['exon'].apply(list(zip(df.exon))))
-# out = c.fetchall()
+flatdf.to_json(outfilename,orient='index')
 
+print("--- %s seconds ---" % (time.time() - start_time))
