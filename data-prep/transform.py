@@ -18,6 +18,56 @@ OT_G2V_PHASE_1_MAX = 1.0
 OT_G2V_PHASE_2_MIN = 0.5
 OT_G2V_PHASE_2_MAX = 0.9
 OT_G2V_PHASE_3_VALUE = 0.5
+FILTERED_TABLE_COLS = [
+    'index',
+    'ld_snp_rsID',
+    # 'chrom',
+    # 'pos',
+    'GRCh38_chrom',
+    'GRCh38_pos',
+    # 'afr_maf',
+    # 'amr_maf',
+    # 'eas_maf',
+    # 'eur_maf',
+    # 'sas_maf',
+    'gene_symbol',
+    'gene_id',
+    # 'gene_chrom',
+    # 'gene_tss',
+    'GRCh38_gene_chrom',
+    'GRCh38_gene_pos',
+    'disease_name',
+    'disease_efo_id',
+    # 'score',
+    # 'rank',
+    'r2',
+    # 'cluster_id',
+    'gwas_source',
+    'gwas_snp',
+    'gwas_pvalue',
+    # 'gwas_pvalue_description',
+    'gwas_odds_ratio',
+    'gwas_beta',
+    'gwas_size',
+    'gwas_pmid',
+    'gwas_study',
+    # 'gwas_reported_trait',
+    # 'ls_snp_is_gwas_snp',
+    'vep_terms',
+    # 'vep_sum',
+    # 'vep_mean',
+    'GTEx',
+    'VEP',
+    'Fantom5',
+    'DHS',
+    'PCHiC',
+    'Nearest',
+    'Regulome',
+    # 'VEP_reg',
+    'ot_vep',
+    'ot_g2v_score',
+    'ot_g2v_score_reason',
+]
 
 def calculate_open_targets_score(eco_scores, vep_terms, gtex, pchic, fantom5, dhs, nearest):
     # calculate for one row the open targets g2v score
@@ -61,6 +111,50 @@ def calculate_open_targets_score(eco_scores, vep_terms, gtex, pchic, fantom5, dh
     # phase 4 (no score - should be filtered)
     return 0
 
+def calculate_open_targets_score_reason(eco_scores, vep_terms, gtex, pchic, fantom5, dhs, nearest):
+    # calculate for one row the open targets g2v score reason
+
+    # phase 1 (sufficient VEP term)
+    vep_terms_list = [term for term in str(vep_terms).split(',') if term in eco_scores]
+    vep_score = max([
+        eco_scores[term] for term in vep_terms_list
+    ], default=0)
+    if vep_score >= MINIMUM_VEP_VALUE:
+        # vep causes the score
+        return '1:VEP'
+
+    # phase 2 (at least some functional genomics)
+    funcgen_score_reason = []
+    if (gtex > MINIMUM_GTEX_VALUE):
+        funcgen_score_reason += ['GTEx']
+    if (pchic > 0):
+        funcgen_score_reason += ['PCHiC']
+    if (fantom5 > 0):
+        funcgen_score_reason += ['Fantom5']
+    if (dhs > 0):
+        funcgen_score_reason += ['DHS']
+    if len(funcgen_score_reason) > 0:
+        # funcgen causes the score
+        return '2' + ';'.join(funcgen_score_reason)
+
+    # phase 3 (nearest gene)
+    if nearest > 0:
+        return '3:Nearest'
+
+    # phase 4 (no score - should be filtered)
+    return ''
+
+def calculate_open_targets_vep(eco_scores, vep_terms):
+    # calculate for one row the open targets vep score
+    vep_terms_list = [term for term in str(vep_terms).split(',') if term in eco_scores]
+    vep_score = max([
+        eco_scores[term] for term in vep_terms_list
+    ], default=0)
+    if vep_score >= MINIMUM_VEP_VALUE:
+        return vep_score
+
+    # catch all
+    return 0
 
 def calculate_open_targets_scores(pg):
     if len(pg) == 0:
@@ -70,6 +164,17 @@ def calculate_open_targets_scores(pg):
     eco_scores_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'eco_scores.tsv')
     eco_scores_df = pd.read_csv(eco_scores_filename, sep='\t', na_values=['None'])
     eco_scores = pd.Series(eco_scores_df['value'].values, index=eco_scores_df['term']).to_dict()
+    
+    # calculate the vep col
+    pg['ot_vep'] = pg.apply(
+        lambda row: calculate_open_targets_score(
+            eco_scores, row['vep_terms']
+        ),
+        axis=1
+    )
+    print('generated ot_vep')
+
+    # calculate the score col
     pg['ot_g2v_score'] = pg.apply(
         lambda row: calculate_open_targets_score(
             eco_scores, row['vep_terms'], row['GTEx'], row['PCHiC'], row['Fantom5'], row['DHS'], row['Nearest']
@@ -78,12 +183,20 @@ def calculate_open_targets_scores(pg):
     )
     print('generated ot_g2v_score')
 
+    # calculate the score reason col
+    pg['ot_g2v_score_reason'] = pg.apply(
+        lambda row: calculate_open_targets_score_reason(
+            eco_scores, row['vep_terms'], row['GTEx'], row['PCHiC'], row['Fantom5'], row['DHS'], row['Nearest']
+        ),
+        axis=1
+    )
+    print('generated ot_g2v_score_reason')
+
     # filter out zeros
     valid_ot_g2v_score = pg['ot_g2v_score'] > 0
     pg = pg[valid_ot_g2v_score]
 
     return pg
-
 
 def open_targets_transform(filename):
     '''
@@ -120,6 +233,9 @@ def open_targets_transform(filename):
     # calculate the open targets g2v score
     pg = calculate_open_targets_scores(pg)
     print('{} rows (after calculating/filtering for valid g2v score)'.format(pg.shape[0]))
+
+    # drop unused cols (to save a bit of space)
+    pg = pg[FILTERED_TABLE_COLS]
 
     # write out
     pg.to_csv('{}.transformed'.format(filename), sep='\t', compression='gzip')
