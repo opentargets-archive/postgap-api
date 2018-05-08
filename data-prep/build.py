@@ -7,9 +7,8 @@ import time
 import os
 from sqlalchemy import create_engine
 
-__dataprepdir__ = os.path.dirname(os.path.abspath(__file__))
-outfilename = os.path.join(__dataprepdir__, 'genes.json')
-outdbname = 'postgap.20180324.db'
+OUTDBNAME = 'postgap.20180324.db'
+OUTGENENAME = 'genes.json'
 
 VALID_CHROMOSOMES = [*[str(chr) for chr in range(1, 23)], 'X', 'Y']
 
@@ -20,7 +19,7 @@ def build_db(filename):
     Open Targets format requirements.
     '''
     # creates db if db does not exist
-    conn = sqlite3.connect(outdbname)
+    conn = sqlite3.connect(OUTDBNAME)
     cursor = conn.cursor()
 
     # build raw table
@@ -58,8 +57,7 @@ def build_raw(cursor, conn, filename):
     'gene_id': str,
     'gene_symbol': str,
     'gwas_pvalue': float,
-    'ls_snp_is_gwas_snp': bool,
-    'gene_id':str
+    'ls_snp_is_gwas_snp': bool
     }
     df = pd.read_csv(filename, compression='gzip', sep='\t', na_values=['None'],
                      dtype=castings)
@@ -118,7 +116,7 @@ def build_ensembl_genes(cursor, conn):
     genes = pd.DataFrame(df.groupby(keepcols)['exons'].apply(list)).reset_index()
     genes.set_index('gene_id', inplace=True)
     print(genes['chr'].value_counts())
-    genes.to_json(os.path.join(__dataprepdir__, 'genes.json'),orient='index')
+    genes.to_json(OUTGENENAME,orient='index')
 
     print("--- Genes table completed in %s seconds ---" % (time.time() - start_time))
     genes.loc[:,('start','end')].to_sql('gene', conn, if_exists='replace')

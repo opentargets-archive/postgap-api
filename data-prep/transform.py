@@ -215,7 +215,6 @@ def open_targets_transform(filename,nrows):
         'chrom':str,
         'GRCh38_chrom':str,
         'GRCh38_gene_chrom':str,
-        'gene_id': str,
         'gene_symbol': str,
         'gwas_pvalue': np.float64,
         'ls_snp_is_gwas_snp': bool,

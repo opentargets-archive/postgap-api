@@ -3,7 +3,7 @@ This is currently an experimental application to build a GraphQL API to serve PO
 
 ## Development
 
-### cloudbuilder
+### Build container with google cloudbuilder
 
 To use the google cloud builder...
 ```sh
