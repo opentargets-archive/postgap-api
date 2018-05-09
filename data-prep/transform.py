@@ -24,7 +24,6 @@ OT_G2V_PHASE_2_MIN = 0.5
 OT_G2V_PHASE_2_MAX = 0.9
 OT_G2V_PHASE_3_VALUE = 0.5
 FILTERED_TABLE_COLS = [
-    'index',
     'ld_snp_rsID',
     # 'chrom',
     # 'pos',
