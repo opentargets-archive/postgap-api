@@ -31,15 +31,10 @@ let db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE, err => {
         db.run(`ATTACH DATABASE "${DB_FILENAME}" AS filedb`)
         .then(() => console.log('Attached file db.'))
         .then(() => {
-            initGeneLocationCache();
-            console.log('Loaded genes position in cache.');
-            console.log(geneLocationsCache['ENSG00000169194']);
-        })
-        .then(() => {
             return db.all('SELECT type,name,sql FROM filedb.sqlite_master;').then(data => {
                 const buildSql = data.map(d => d.sql).join(';');
                 const tables = data.filter(d => d.type === 'table')
-                    // .filter(d => ['gene', 'lead_variant', 'chr_7'].indexOf(d.name) >= 0)
+                    .filter(d => ['gene', 'lead_variant', 'chr_7'].indexOf(d.name) >= 0)
                     .map(d => d.name);
 
                 const copyTables = () => Promise.all(
@@ -72,12 +67,8 @@ db.on('profile', (sql, ms) => {
     }
 });
 
-// total number of genes is ~20,000,
-// so cache ensembl calls on an object
-let geneLocationsCache = {};
-function initGeneLocationCache() {
-    geneLocationsCache = JSON.parse(fs.readFileSync('genes.json','utf8'));
-}
+// cache gene locations on object
+let geneLocationsCache = JSON.parse(fs.readFileSync('genes.json','utf8'));
 
 
 // load the schema
