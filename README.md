@@ -32,7 +32,7 @@ pipenv run python data-prep/transform.py -f <yourpostgap.file.txt>
 ```
 
 
-Build the `sqlite3` database (outputs `postgap.<dateversion>.db`):
+Build the `sqlite3` database (outputs `postgap.<dateversion>.db`). You may need to `brew install mysql` first.
 ```
 pipenv run python data-prep/build.py /data-prep/postgap.20180324.txt.transformed.gz
 ```
