@@ -34,7 +34,7 @@ let db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE, err => {
             return db.all('SELECT type,name,sql FROM filedb.sqlite_master;').then(data => {
                 const buildSql = data.map(d => d.sql).join(';');
                 const tables = data.filter(d => d.type === 'table')
-                    .filter(d => ['gene', 'lead_variant', 'chr_7'].indexOf(d.name) >= 0)
+                    // .filter(d => ['gene', 'lead_variant', 'chr_7', 'processed'].indexOf(d.name) >= 0)
                     .map(d => d.name);
 
                 const copyTables = () => Promise.all(
