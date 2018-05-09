@@ -172,7 +172,7 @@ def calculate_open_targets_scores(pg):
 
     # calculate the vep col
     pg['ot_vep'] = pg.apply(
-        lambda row: calculate_open_targets_score(
+        lambda row: calculate_open_targets_vep(
             eco_scores, row['vep_terms']
         ),
         axis=1
