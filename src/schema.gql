@@ -44,7 +44,9 @@ type GeneVariant {
     # variantChromosome: String
     vPos: Int
     otG2VScore: Float
+    otG2VReason: String
     vep: Float
+    vepTerms: String
     gtex: Float
     pchic: Float
     fantom5: Float
@@ -123,7 +125,9 @@ type FullTableRow {
     efoId: String
     efoName: String
     otG2VScore: Float
+    otG2VReason: String
     vep: Float
+    vepTerms: String
     gtex: Float
     pchic: Float
     fantom5: Float
