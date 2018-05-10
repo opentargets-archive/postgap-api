@@ -108,6 +108,7 @@ const resolveGenes = ({ common }, args, { db, geneLocationsCache }) => {
             const geneLocation = geneLocationsCache[d.id];
             return {
                 ...d,
+                description: geneLocation.description,
                 forwardStrand: geneLocation.fwdstrand,
                 // canonicalTranscript: geneLocation.canonicalTranscript
                 tss: geneLocation.tss,
