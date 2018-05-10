@@ -1,6 +1,12 @@
 // helper methods
+const GTEX_THRESHOLD = 0.999975;
 const getLocusFiltersSql = ({ g2VMustHaves, g2VScore, r2, gwasPValue }) => {
-    let filtersSql = g2VMustHaves.length > 0 ? (g2VMustHaves.map(d => `AND (${d.toLowerCase()} > 0)`).join(' ')) : '';
+    let filtersSql = g2VMustHaves.length > 0 ? (g2VMustHaves.map(d => {
+        if (d.toLowerCase() === 'gtex') {
+            return `AND (${d.toLowerCase()} > ${GTEX_THRESHOLD})`;
+        }
+        return `AND (${d.toLowerCase()} > 0)`;
+    }).join(' ')) : '';
     if (g2VScore && g2VScore.length === 2) {
         filtersSql += ` AND (ot_g2v_score >= ${g2VScore[0]}) AND (ot_g2v_score <= ${g2VScore[1]})`;
     }
