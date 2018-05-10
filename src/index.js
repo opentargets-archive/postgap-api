@@ -10,9 +10,11 @@ import { makeExecutableSchema } from 'graphql-tools';
 import sqlite3 from 'sqlite3';
 import { promisify } from 'bluebird';
 import { addMiddleware } from 'graphql-add-middleware';
+
 import locus, { resolveLocus } from './resolvers/locus';
 import locusTable from './resolvers/locusTable';
 import diseaseTable from './resolvers/diseaseTable';
+import geneLocation from './resolvers/geneLocation';
 
 const DB_FILENAME = 'postgap.20180324.db';
 
@@ -80,7 +82,8 @@ const resolvers = {
     Query: {
         locus: resolveLocus,
         locusTable,
-        diseaseTable
+        diseaseTable,
+        geneLocation
     },
     DrawableLocus: locus
 };

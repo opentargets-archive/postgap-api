@@ -2,6 +2,7 @@ type Query {
     locus(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String): DrawableLocus
     locusTable(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String, offset: Int, limit: Int): LocusTable
     diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
+    geneLocation(geneId: String): GeneLocation
 }
 type Gene {
     # The Ensembl gene identifier.
@@ -16,6 +17,13 @@ type Gene {
     # canonicalTranscript: CanonicalTranscript
     exons: [[Int]]
     selected: Boolean
+}
+type GeneLocation {
+    id: String
+    symbol: String
+    chromosome: String
+    start: Int
+    end: Int
 }
 type Variant {
     id: String
