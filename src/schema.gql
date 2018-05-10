@@ -3,6 +3,7 @@ type Query {
     locusTable(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String, offset: Int, limit: Int): LocusTable
     diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
     geneLocation(geneId: String): GeneLocation
+    variantLocation(variantId: String): VariantLocation
 }
 type Gene {
     # The Ensembl gene identifier.
@@ -24,6 +25,13 @@ type GeneLocation {
     chromosome: String
     start: Int
     end: Int
+}
+type VariantLocation {
+    id: String
+    chromosome: String
+    position: Int
+    isLeadVariant: Boolean
+    isVariant: Boolean
 }
 type Variant {
     id: String
