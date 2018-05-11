@@ -4,6 +4,7 @@ type Query {
     diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
     geneLocation(geneId: String): GeneLocation
     variantLocation(variantId: String): VariantLocation
+    search(queryString: String): [SearchResult]
 }
 type Gene {
     # The Ensembl gene identifier.
@@ -32,6 +33,11 @@ type VariantLocation {
     position: Int
     isLeadVariant: Boolean
     isVariant: Boolean
+}
+type SearchResult {
+    id: String
+    name: String
+    type: String
 }
 type Variant {
     id: String

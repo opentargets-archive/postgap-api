@@ -16,6 +16,7 @@ import locusTable from './resolvers/locusTable';
 import diseaseTable from './resolvers/diseaseTable';
 import geneLocation from './resolvers/geneLocation';
 import variantLocation from './resolvers/variantLocation';
+import search from './resolvers/search';
 
 const DB_FILENAME = 'postgap.20180324.db';
 
@@ -85,7 +86,8 @@ const resolvers = {
         locusTable,
         diseaseTable,
         geneLocation,
-        variantLocation
+        variantLocation,
+        search
     },
     DrawableLocus: locus
 };
