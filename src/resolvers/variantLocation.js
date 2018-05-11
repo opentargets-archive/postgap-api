@@ -1,4 +1,4 @@
-const resolveGeneLocation = (_, { variantId }, { db }) => {
+const resolveVariantLocation = (_, { variantId }, { db }) => {
     const params = { $variantId: variantId };
     const variantSql = `
         SELECT
@@ -41,4 +41,4 @@ const resolveGeneLocation = (_, { variantId }, { db }) => {
     });
 };
 
-export default resolveGeneLocation;
+export default resolveVariantLocation;
