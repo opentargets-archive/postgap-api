@@ -7,7 +7,7 @@ import time
 import os
 from sqlalchemy import create_engine
 
-OUTDBNAME = 'postgap.20180324.db'
+OUTDBNAME = 'postgap.20180514.db'
 OUTGENENAME = 'genes.json'
 
 VALID_CHROMOSOMES = [*[str(chr) for chr in range(1, 23)], 'X', 'Y']
@@ -119,7 +119,7 @@ def build_ensembl_genes(cursor, conn):
     genes.to_json(OUTGENENAME,orient='index')
 
     print("--- Genes table completed in %s seconds ---" % (time.time() - start_time))
-    genes.loc[:,('start','end')].to_sql('gene', conn, if_exists='replace')
+    genes.loc[:,('chr', 'start', 'end')].to_sql('gene', conn, if_exists='replace')
 
     # add indices
     try:

@@ -139,7 +139,7 @@ def calculate_open_targets_score_reason(eco_scores, vep_terms, gtex, pchic, fant
         funcgen_score_reason += ['DHS']
     if len(funcgen_score_reason) > 0:
         # funcgen causes the score
-        return '2' + ';'.join(funcgen_score_reason)
+        return '2:' + ';'.join(funcgen_score_reason)
 
     # phase 3 (nearest gene)
     if nearest > 0:
@@ -260,7 +260,7 @@ def open_targets_transform(filename,nrows):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('-filename', default='https://storage.googleapis.com/postgap-data/postgap.20180324.txt.gz')
+    parser.add_argument('-filename', default='https://storage.googleapis.com/postgap-data/postgap.20180514.txt.gz')
     parser.add_argument('--sample', action='store_const', const=5000,
                         help='run on a small subsample')
 
