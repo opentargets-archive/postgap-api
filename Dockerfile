@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 RUN yarn global add pm2
 
 # Copy in the sqlite database
-COPY postgap.20180324.sample.db ./postgap.db
+COPY postgap.20180514.db ./postgap.db
 #TODO we should declare a VOLUME here
 
 # Install app dependencies
