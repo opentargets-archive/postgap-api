@@ -21,6 +21,7 @@
     "graphql": "^0.13.2",
     "graphql-add-middleware": "^0.1.5",
     "graphql-tools": "^2.23.1",
+    "morgan": "^1.9.0",
     "response-time": "^2.3.2",
     "sqlite3": "^4.0.0"
   },

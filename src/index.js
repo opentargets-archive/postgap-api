@@ -10,6 +10,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import sqlite3 from 'sqlite3';
 import { promisify } from 'bluebird';
 import { addMiddleware } from 'graphql-add-middleware';
+import morgan from 'morgan';
 
 import locus, { resolveLocus } from './resolvers/locus';
 import locusTable from './resolvers/locusTable';
@@ -109,7 +110,7 @@ const context = {
 
 // create express app
 const app = express();
-app.use('/graphql', responseTime(), cors(corsOptions), bodyParser.json(), graphqlExpress({ schema, context }))
+app.use('/graphql', morgan('tiny'), responseTime(), cors(corsOptions), bodyParser.json(), graphqlExpress({ schema, context }))
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
 app.get('/', (req, res) => res.send('All is well at the root!'))
 
