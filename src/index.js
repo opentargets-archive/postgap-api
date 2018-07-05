@@ -19,7 +19,7 @@ import geneLocation from './resolvers/geneLocation';
 import variantLocation from './resolvers/variantLocation';
 import search from './resolvers/search';
 
-const DB_FILENAME = 'postgap.20180514.db';
+const DB_FILENAME = 'postgap.db';
 
 // open a connection to an in-memory database
 let db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE, err => {

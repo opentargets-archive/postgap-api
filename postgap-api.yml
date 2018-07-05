@@ -1,22 +1,22 @@
 apiVersion: "extensions/v1beta1"
 kind: "Deployment"
 metadata:
-  name: "postgap-api"
+  name: "postgapapi"
   namespace: "default"
   labels:
-    app: "postgap-api"
+    run: "postgapapi"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: "postgap-api"
+      run: "postgapapi"
   template:
     metadata:
       labels:
-        app: "postgap-api"
+        run: "postgapapi"
     spec:
       containers:
-      - name: "postgap-api"
-        image: "eu.gcr.io/open-targets-eu-dev/postgap-api:20180516"
+      - name: "postgapapi"
+        image: "eu.gcr.io/open-targets-eu-dev/postgap-api:20180615"
         ports:
           - containerPort: 4000

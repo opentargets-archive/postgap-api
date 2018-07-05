@@ -7,7 +7,7 @@ import time
 import os
 from sqlalchemy import create_engine
 
-OUTDBNAME = 'postgap.20180514.db'
+OUTDBNAME = 'postgap.20180615.db'
 OUTGENENAME = 'genes.json'
 
 VALID_CHROMOSOMES = [*[str(chr) for chr in range(1, 23)], 'X', 'Y']

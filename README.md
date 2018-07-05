@@ -28,13 +28,18 @@ pipenv run python data-prep/transform.py --sample
 Note: the command above will download a 1GB file and might take a while to execute.
 If you want to run it on a local file, use instead:
 ```sh
-pipenv run python data-prep/transform.py -f <yourpostgap.file.txt>
+pipenv run python data-prep/transform.py -f <postgapfile.<version>.txt.gz>
 ```
-
 
 Build the `sqlite3` database (outputs `postgap.<dateversion>.db`). You may need to `brew install mysql` first.
 ```
-pipenv run python data-prep/build.py /data-prep/postgap.20180324.txt.transformed.gz
+pipenv run python data-prep/build.py /data-prep/postgap.<version>.txt.transformed.gz
+```
+
+If this step is succesful you should obtain a `postgap.<version>.db` file in
+your root directory. Now just symlink it to `postgap.db` for everything to work:
+```sh
+ln -s postgap.<version>.db postgap.db
 ```
 
 ### GraphQL server
