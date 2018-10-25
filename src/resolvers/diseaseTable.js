@@ -1,8 +1,8 @@
 const resolverDiseaseTable = (_, { efoId, offset, limit }, { db }) => {
-    const params = {$efoId: efoId, $offset: offset, $limit: limit};
+  const params = { $efoId: efoId, $offset: offset, $limit: limit };
 
-    // rows
-    const rowsSql = `
+  // rows
+  const rowsSql = `
     SELECT
         "index",
         gene_id as geneId,
@@ -15,8 +15,9 @@ const resolverDiseaseTable = (_, { efoId, offset, limit }, { db }) => {
         gwas_snp as lvId,
         disease_efo_id as efoId,
         disease_name as efoName,
-        ot_g2v_score as otG2VScore,
-        ot_g2v_score_reason as otG2VReason,
+        gtex_max_tissue as gtexMaxTissue,
+        gtex_max_value as gtexMaxValue,
+        score as otG2VScore,
         ot_vep as vep,
         vep_terms as vepTerms,
         GTEx as gtex,
@@ -36,28 +37,25 @@ const resolverDiseaseTable = (_, { efoId, offset, limit }, { db }) => {
     LIMIT $limit
     OFFSET $offset
     `;
-    const rowsQuery = db.all(rowsSql, params);
+  const rowsQuery = db.all(rowsSql, params);
 
-    // total rows
-    const totalRowsSql = `
+  // total rows
+  const totalRowsSql = `
     SELECT COUNT(*) as total
     FROM processed
     WHERE disease_efo_id=$efoId
     `;
-    const totalRowsQuery = db.get(totalRowsSql, { $efoId: efoId });
+  const totalRowsQuery = db.get(totalRowsSql, { $efoId: efoId });
 
-    // wait for all queries and return composite object
-    return Promise.all([
-        rowsQuery,
-        totalRowsQuery,
-    ]).then(([rows, { total }]) => {
-        return {
-            rows,
-            total,
-            offset,
-            limit
-        }
-    })
+  // wait for all queries and return composite object
+  return Promise.all([rowsQuery, totalRowsQuery]).then(([rows, { total }]) => {
+    return {
+      rows,
+      total,
+      offset,
+      limit,
+    };
+  });
 };
 
 export default resolverDiseaseTable;

@@ -23,6 +23,52 @@ OT_G2V_PHASE_1_MAX = 1.0
 OT_G2V_PHASE_2_MIN = 0.5
 OT_G2V_PHASE_2_MAX = 0.9
 OT_G2V_PHASE_3_VALUE = 0.5
+GTEX_TISSUES = [
+    'GTEx_Thyroid',
+    'GTEx_Testis',
+    'GTEx_Cells_Transformed_fibroblasts',
+    'GTEx_Nerve_Tibial',
+    'GTEx_Brain_Frontal_Cortex_BA9',
+    'GTEx_Artery_Aorta',
+    'GTEx_Vagina',
+    'GTEx_Whole_Blood',
+    'GTEx_Breast_Mammary_Tissue',
+    'GTEx_Ovary',
+    'GTEx_Adipose_Subcutaneous',
+    'GTEx_Adrenal_Gland',
+    'GTEx_Heart_Atrial_Appendage',
+    'GTEx_Stomach',
+    'GTEx_Brain_Caudate_basal_ganglia',
+    'GTEx_Colon_Transverse',
+    'GTEx_Brain_Cerebellum',
+    'GTEx_Esophagus_Muscularis',
+    'GTEx_Liver',
+    'GTEx_Muscle_Skeletal',
+    'GTEx_Prostate',
+    'GTEx_Small_Intestine_Terminal_Ileum',
+    'GTEx_Brain_Hypothalamus',
+    'GTEx_Spleen',
+    'GTEx_Colon_Sigmoid',
+    'GTEx_Brain_Anterior_cingulate_cortex_BA24',
+    'GTEx_Esophagus_Gastroesophageal_Junction',
+    'GTEx_Brain_Hippocampus',
+    'GTEx_Brain_Cortex',
+    'GTEx_Heart_Left_Ventricle',
+    'GTEx_Artery_Tibial',
+    'GTEx_Uterus',
+    'GTEx_Pituitary',
+    'GTEx_Cells_EBV-transformed_lymphocytes',
+    'GTEx_Artery_Coronary',
+    'GTEx_Adipose_Visceral_Omentum',
+    'GTEx_Brain_Nucleus_accumbens_basal_ganglia',
+    'GTEx_Brain_Cerebellar_Hemisphere',
+    'GTEx_Esophagus_Mucosa',
+    'GTEx_Skin_Not_Sun_Exposed_Suprapubic',
+    'GTEx_Brain_Putamen_basal_ganglia',
+    'GTEx_Lung',
+    'GTEx_Pancreas',
+    'GTEx_Skin_Sun_Exposed_Lower_leg',
+]
 FILTERED_TABLE_COLS = [
     'ld_snp_rsID',
     # 'chrom',
@@ -42,7 +88,7 @@ FILTERED_TABLE_COLS = [
     'GRCh38_gene_pos',
     'disease_name',
     'disease_efo_id',
-    # 'score',
+    'score',
     # 'rank',
     'r2',
     # 'cluster_id',
@@ -69,8 +115,10 @@ FILTERED_TABLE_COLS = [
     'Regulome',
     # 'VEP_reg',
     'ot_vep',
-    'ot_g2v_score',
-    'ot_g2v_score_reason',
+    #'ot_g2v_score',
+    #'ot_g2v_score_reason',
+    'gtex_max_tissue',
+    'gtex_max_value'
 ]
 
 def calculate_open_targets_score(eco_scores, vep_terms, gtex, pchic, fantom5, dhs, nearest):
@@ -178,27 +226,34 @@ def calculate_open_targets_scores(pg):
     )
     print('generated ot_vep')
 
-    # calculate the score col
-    pg['ot_g2v_score'] = pg.apply(
-        lambda row: calculate_open_targets_score(
-            eco_scores, row['vep_terms'], row['GTEx'], row['PCHiC'], row['Fantom5'], row['DHS'], row['Nearest']
-        ),
-        axis=1
-    )
-    print('generated ot_g2v_score')
+    # calculate the best gtex tissue
+    pg['gtex_max_tissue'] = pg[GTEX_TISSUES].idxmax(axis=1)
+    pg['gtex_max_value'] = pg[GTEX_TISSUES].max(axis=1)
+    print('generated gtex')
 
-    # calculate the score reason col
-    pg['ot_g2v_score_reason'] = pg.apply(
-        lambda row: calculate_open_targets_score_reason(
-            eco_scores, row['vep_terms'], row['GTEx'], row['PCHiC'], row['Fantom5'], row['DHS'], row['Nearest']
-        ),
-        axis=1
-    )
-    print('generated ot_g2v_score_reason')
+    # DISABLED IN FAVOUR OF POSTGAP SCORE
+    # # calculate the score col
+    # pg['ot_g2v_score'] = pg.apply(
+    #     lambda row: calculate_open_targets_score(
+    #         eco_scores, row['vep_terms'], row['GTEx'], row['PCHiC'], row['Fantom5'], row['DHS'], row['Nearest']
+    #     ),
+    #     axis=1
+    # )
+    # print('generated ot_g2v_score')
 
-    # filter out zeros
-    valid_ot_g2v_score = pg['ot_g2v_score'] > 0
-    pg = pg[valid_ot_g2v_score]
+    # # calculate the score reason col
+    # pg['ot_g2v_score_reason'] = pg.apply(
+    #     lambda row: calculate_open_targets_score_reason(
+    #         eco_scores, row['vep_terms'], row['GTEx'], row['PCHiC'], row['Fantom5'], row['DHS'], row['Nearest']
+    #     ),
+    #     axis=1
+    # )
+    # print('generated ot_g2v_score_reason')
+
+    # # filter out zeros
+    # valid_ot_g2v_score = pg['ot_g2v_score'] > 0
+    # pg = pg[valid_ot_g2v_score]
+    # END DISABLED IN FAVOUR OF POSTGAP SCORE
 
     return pg
 

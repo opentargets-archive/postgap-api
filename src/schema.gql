@@ -1,166 +1,190 @@
 type Query {
-    locus(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String): DrawableLocus
-    locusTable(chromosome: String, start: Int, end: Int, g2VMustHaves: [String], g2VScore: [Float] r2: [Float], gwasPValue: [Float], selectedId: String, selectedType: String, offset: Int, limit: Int): LocusTable
-    diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
-    geneLocation(geneId: String): GeneLocation
-    variantLocation(variantId: String): VariantLocation
-    search(queryString: String): [SearchResult]
+  locus(
+    chromosome: String
+    start: Int
+    end: Int
+    g2VMustHaves: [String]
+    g2VScore: [Float]
+    r2: [Float]
+    gwasPValue: [Float]
+    selectedId: String
+    selectedType: String
+  ): DrawableLocus
+  locusTable(
+    chromosome: String
+    start: Int
+    end: Int
+    g2VMustHaves: [String]
+    g2VScore: [Float]
+    r2: [Float]
+    gwasPValue: [Float]
+    selectedId: String
+    selectedType: String
+    offset: Int
+    limit: Int
+  ): LocusTable
+  diseaseTable(efoId: String, offset: Int, limit: Int): DiseaseTable
+  geneLocation(geneId: String): GeneLocation
+  variantLocation(variantId: String): VariantLocation
+  search(queryString: String): [SearchResult]
 }
 type Gene {
-    # The Ensembl gene identifier.
-    id: String
-    symbol: String
-    description: String
-    chromosome: String
-    tss: Int
-    start: Int
-    end: Int
-    forwardStrand: Boolean
-    # canonicalTranscript: CanonicalTranscript
-    exons: [[Int]]
-    selected: Boolean
+  # The Ensembl gene identifier.
+  id: String
+  symbol: String
+  description: String
+  chromosome: String
+  tss: Int
+  start: Int
+  end: Int
+  forwardStrand: Boolean
+  # canonicalTranscript: CanonicalTranscript
+  exons: [[Int]]
+  selected: Boolean
 }
 type GeneLocation {
-    id: String
-    symbol: String
-    chromosome: String
-    start: Int
-    end: Int
+  id: String
+  symbol: String
+  chromosome: String
+  start: Int
+  end: Int
 }
 type VariantLocation {
-    id: String
-    chromosome: String
-    position: Int
-    isLeadVariant: Boolean
-    isVariant: Boolean
+  id: String
+  chromosome: String
+  position: Int
+  isLeadVariant: Boolean
+  isVariant: Boolean
 }
 type SearchResult {
-    id: String
-    name: String
-    type: String
+  id: String
+  name: String
+  type: String
 }
 type Variant {
-    id: String
-    # chromosome: String
-    position: Int
-    selected: Boolean
+  id: String
+  # chromosome: String
+  position: Int
+  selected: Boolean
 }
 type LeadVariant {
-    id: String
-    # chromosome: String
-    position: Int
-    selected: Boolean
+  id: String
+  # chromosome: String
+  position: Int
+  selected: Boolean
 }
 type Disease {
-    id: String
-    name: String
-    selected: Boolean
+  id: String
+  name: String
+  selected: Boolean
 }
 type GeneVariant {
-    id: String
-    geneId: String
-    geneSymbol: String
-    # geneChromosome: String
-    geneTss: Int
-    # canonicalTranscript: CanonicalTranscript
-    vId: String
-    # variantChromosome: String
-    vPos: Int
-    otG2VScore: Float
-    otG2VReason: String
-    vep: Float
-    vepTerms: String
-    gtex: Float
-    pchic: Float
-    fantom5: Float
-    dhs: Float
-    nearest: Boolean
-    selected: Boolean
+  id: String
+  geneId: String
+  geneSymbol: String
+  # geneChromosome: String
+  geneTss: Int
+  # canonicalTranscript: CanonicalTranscript
+  vId: String
+  # variantChromosome: String
+  vPos: Int
+  otG2VScore: Float
+  gtexMaxTissue: String
+  gtexMaxValue: Float
+  vep: Float
+  vepTerms: String
+  gtex: Float
+  pchic: Float
+  fantom5: Float
+  dhs: Float
+  nearest: Boolean
+  selected: Boolean
 }
 type VariantLeadVariant {
-    id: String
-    vId: String
-    # variantChromosome: String
-    vPos: Int
-    lvId: String
-    # leadVariantChromosome: String
-    lvPos: Int
-    r2: Float
-    selected: Boolean
+  id: String
+  vId: String
+  # variantChromosome: String
+  vPos: Int
+  lvId: String
+  # leadVariantChromosome: String
+  lvPos: Int
+  r2: Float
+  selected: Boolean
 }
 type LeadVariantDisease {
-    id: String
-    lvId: String
-    # leadVariantChromosome: String
-    lvPos: Int
-    efoId: String
-    efoName: String
-    gwasPValue: Float
-    gwasOddsRatio: Float
-    gwasBeta: Float
-    gwasStudy: String
-    gwasPMId: String
-    gwasSize: Int
-    selected: Boolean
+  id: String
+  lvId: String
+  # leadVariantChromosome: String
+  lvPos: Int
+  efoId: String
+  efoName: String
+  gwasPValue: Float
+  gwasOddsRatio: Float
+  gwasBeta: Float
+  gwasStudy: String
+  gwasPMId: String
+  gwasSize: Int
+  selected: Boolean
 }
 type CanonicalTranscript {
-    id: String
-    start: Int
-    end: Int
-    forwardStrand: Boolean
-    exons: [[Int]]
-    tss: Int
-    translationStart: Int
-    translationEnd: Int
+  id: String
+  start: Int
+  end: Int
+  forwardStrand: Boolean
+  exons: [[Int]]
+  tss: Int
+  translationStart: Int
+  translationEnd: Int
 }
 type DrawableLocus {
-    genes: [Gene]
-    variants: [Variant]
-    leadVariants: [LeadVariant]
-    diseases: [Disease]
-    geneVariants: [GeneVariant]
-    variantLeadVariants: [VariantLeadVariant]
-    leadVariantDiseases: [LeadVariantDisease]
-    maxGwasPValue: Float
+  genes: [Gene]
+  variants: [Variant]
+  leadVariants: [LeadVariant]
+  diseases: [Disease]
+  geneVariants: [GeneVariant]
+  variantLeadVariants: [VariantLeadVariant]
+  leadVariantDiseases: [LeadVariantDisease]
+  maxGwasPValue: Float
 }
 type LocusTable {
-    rows: [FullTableRow]
-    total: Int
-    offset: Int
-    limit: Int
+  rows: [FullTableRow]
+  total: Int
+  offset: Int
+  limit: Int
 }
 type DiseaseTable {
-    rows: [FullTableRow]
-    total: Int
-    offset: Int
-    limit: Int
+  rows: [FullTableRow]
+  total: Int
+  offset: Int
+  limit: Int
 }
 type FullTableRow {
-    index: Int
-    geneId: String
-    geneSymbol: String
-    geneChromosome: String
-    geneTss: Int
-    vId: String
-    variantChromosome: String
-    vPos: Int
-    lvId: String
-    efoId: String
-    efoName: String
-    otG2VScore: Float
-    otG2VReason: String
-    vep: Float
-    vepTerms: String
-    gtex: Float
-    pchic: Float
-    fantom5: Float
-    dhs: Float
-    nearest: Boolean
-    r2: Float
-    gwasPValue: Float
-    gwasOddsRatio: Float
-    gwasBeta: Float
-    gwasSize: Int
-    gwasPMId: String
-    gwasStudy: String
+  index: Int
+  geneId: String
+  geneSymbol: String
+  geneChromosome: String
+  geneTss: Int
+  vId: String
+  variantChromosome: String
+  vPos: Int
+  lvId: String
+  efoId: String
+  efoName: String
+  otG2VScore: Float
+  gtexMaxTissue: String
+  gtexMaxValue: Float
+  vep: Float
+  vepTerms: String
+  gtex: Float
+  pchic: Float
+  fantom5: Float
+  dhs: Float
+  nearest: Boolean
+  r2: Float
+  gwasPValue: Float
+  gwasOddsRatio: Float
+  gwasBeta: Float
+  gwasSize: Int
+  gwasPMId: String
+  gwasStudy: String
 }
