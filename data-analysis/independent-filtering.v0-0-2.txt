@@ -1,7 +1,0 @@
-# Independent filtering (starting with 29653618 rows)
-29653618 rows (after filtering gwas_source - no effect - 100% retained)
-29653618 rows (after filtering for valid chromosomes - no effect - 100% retained)
-29644070 rows (after filtering for gene-variant chromosome match - 99.9678% retained)
-29011299 rows (after filtering for gene-variant distance - 97.83% retained)
-5829054 rows (after filtering for valid gtex - 19.66% retained)
-5699782 rows (after calculating/filtering for valid g2v score - 19.22% retained)
