@@ -92,7 +92,7 @@ Update the tag in `postgap-api.yml` to `TAG_NAME`.
 There is a kubernetes cluster set up on google cloud under the project `open-targets-eu-dev`. Replace the existing development cluster. To deploy the new image, run the following:
 
 ```
-kubectl delete deploy/postgap-api
+kubectl delete deployment postgapapi
 kubectl create -f postgap-api.yml
 ```
 
